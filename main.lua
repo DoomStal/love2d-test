@@ -35,19 +35,33 @@ function love.load()
 	player.color_b = 0
 
 	local a = Animation:new()
+	a.rate = 0
+	a.frames = {
+		Frame:new("stand.png", 0, 0, 96, 96, 28, 28)
+	}
+	player.animations["stand"] = a
+
+	a = Animation:new()
 	a.rate = 15
 	a.loop = true
+	a.frames = {
+		Frame:new("run.png", 0, 0, 96, 96, 28, 25),
+		Frame:new("run.png", 96, 0, 96, 96, 28, 25),
+		Frame:new("run.png", 192, 0, 96, 96, 28, 25),
+		Frame:new("run.png", 288, 0, 96, 96, 28, 25),
+		Frame:new("run.png", 384, 0, 96, 96, 28, 25),
+		Frame:new("run.png", 480, 0, 96, 96, 28, 25)
+	}
+	player.animations["run"] = a
 
-	table.insert(a.frames, Frame:new("run.png", 0, 0, 96, 96))
-	table.insert(a.frames, Frame:new("run.png", 96, 0, 96, 96))
-	table.insert(a.frames, Frame:new("run.png", 192, 0, 96, 96))
-	table.insert(a.frames, Frame:new("run.png", 288, 0, 96, 96))
-	table.insert(a.frames, Frame:new("run.png", 384, 0, 96, 96))
-	table.insert(a.frames, Frame:new("run.png", 480, 0, 96, 96))
+	a = Animation:new()
+	a.rate = 0
+	a.frames = {
+		Frame:new("jump.png", 0, 0, 96, 96, 28, 24)
+	}
+	player.animations["jump"] = a
 
-	player.animation = a
-	player.animation_frame = 1
-	player.name = "name"
+	player:setAnimation("stand")
 
 	entities:insert(player)
 
@@ -88,11 +102,11 @@ function love.update(dt)
 	player.key_left = love.keyboard.isDown("left")
 	player.key_right = love.keyboard.isDown("right")
 
-	camera:setPosition(player.x, player.y)
-
 	for _,v in ipairs(entities) do
 		v:update(dt)
 	end
+
+	camera:setPosition(player.x, player.y - player.height/2)
 
 	local min_x = love.graphics.getWidth()/2
 	local max_x = TiledMap_GetMapW()*kTileSize - love.graphics.getWidth()/2

@@ -9,7 +9,7 @@ function camera:set()
   love.graphics.push()
   love.graphics.rotate(-self.rotation)
   love.graphics.scale(1 / self.scaleX, 1 / self.scaleY)
-  love.graphics.translate(math.floor(0.5 - self.x), math.floor(0.5 - self.y))
+  love.graphics.translate(math.floor(-self.x), math.floor(-self.y))
 end
 
 function camera:unset()
@@ -34,6 +34,8 @@ end
 function camera:setPosition(x, y)
   self.x = x or self.x
   self.y = y or self.y
+  self.x = math.floor(self.x + 0.5)
+  self.y = math.floor(self.y + 0.5)
 end
 
 function camera:setScale(sx, sy)
