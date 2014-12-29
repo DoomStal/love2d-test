@@ -1,61 +1,78 @@
 -- http://www.love2d.org/wiki/Minimalist_Sound_Manager
 
-dofile("camera.lua")
-dofile("tiled.lua")
+require("camera")
+require("tiled")
+require("image_man")
+
+require("collection")
+
+require("animation")
+require("entity")
+
+entities = Collection:new()
 
 function love.load()
 
 	love.graphics.setDefaultFilter("nearest", "nearest")
-
-	love.graphics.setNewFont(20)
 	love.graphics.setBackgroundColor(255, 255, 255)
+
+	font = love.graphics.newImageFont("font.png",
+		" abcdefghijklmnopqrstuvwxyz"..
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZ0"..
+		"123456789.,!?-+/():;%&`'*#=[]\"")
+
+	love.graphics.setFont(font)
 
 	TiledMap_Load("level.tmx")
 
-	stand = love.graphics.newImage("stand.png")
+	player = EntityLiving:new();
+	player.x = 10
+	player.y = 10
+	player.width = 40
+	player.height = 56
+	player.color_r = 255
+	player.color_g = 0
+	player.color_b = 0
+
+	local a = Animation:new()
+	a.rate = 15
+	a.loop = true
+
+	table.insert(a.frames, Frame:new("run.png", 0, 0, 96, 96))
+	table.insert(a.frames, Frame:new("run.png", 96, 0, 96, 96))
+	table.insert(a.frames, Frame:new("run.png", 192, 0, 96, 96))
+	table.insert(a.frames, Frame:new("run.png", 288, 0, 96, 96))
+	table.insert(a.frames, Frame:new("run.png", 384, 0, 96, 96))
+	table.insert(a.frames, Frame:new("run.png", 480, 0, 96, 96))
+
+	player.animation = a
+	player.animation_frame = 1
+	player.name = "name"
+
+	entities:insert(player)
 
 	sound = {
 		jump = love.audio.newSource("jump.wav", "static")
 	}
 
+--[[
 	music_list = {
 		"CHRIS31B.IT"
 	}
-
 	music = love.audio.newSource( music_list[1] )
 	music:setVolume(0.3)
-
-	-- camera:setScale(0.5, 0.5)
-
 	music:play()
+]]
+
 end
 
-player = { x = 10, y = 10 }
-
-text = "Hello world!"
-
-function love.mousepressed(x, y, button) -- https://love2d.org/wiki/MouseConstant
-	text = "mouse pressed '"..button.."' at "..x..", "..y
-end
-
-function love.mousereleased(x, y, button) -- https://love2d.org/wiki/MouseConstant
-	text = "mouse released '"..button.."' at "..x..", "..y
-end
-
-function love.keypressed(key) -- https://love2d.org/wiki/KeyConstant
-	text = "key '"..key.."' was pressed"
-end
-
-function love.keyreleased(key) -- https://love2d.org/wiki/KeyConstant
-	text = "key '"..key.."' was released"
-	if key == "escape" then love.event.quit() end
+function love.keyreleased(key)
+	if(key == "escape") then love.event.quit() end
 end
 
 function love.focus(f)
 	if f then
-		text = "gained focus"
 	else
-		text = "lost focus"
 	end
 end
 
@@ -65,18 +82,27 @@ end
 
 function love.update(dt)
 	local camera_speed = 200
-	if love.keyboard.isDown("up") then
-		camera:move(0, -camera_speed * dt)
+	local speed = 200
+
+	player.key_jump = love.keyboard.isDown("up")
+	player.key_left = love.keyboard.isDown("left")
+	player.key_right = love.keyboard.isDown("right")
+
+	camera:setPosition(player.x, player.y)
+
+	for _,v in ipairs(entities) do
+		v:update(dt)
 	end
-	if love.keyboard.isDown("down") then
-		camera:move(0, camera_speed * dt)
-	end
-	if love.keyboard.isDown("left") then
-		camera:move(-camera_speed * dt, 0)
-	end
-	if love.keyboard.isDown("right") then
-		camera:move(camera_speed * dt, 0)
-	end
+
+	local min_x = love.graphics.getWidth()/2
+	local max_x = TiledMap_GetMapW()*kTileSize - love.graphics.getWidth()/2
+	-- local min_y = love.graphics.getHeight()/2
+	local max_y = TiledMap_GetMapH()*kTileSize - love.graphics.getHeight()/2
+	camera:setPosition(
+		math.min(math.max(min_x, camera.x), max_x),
+		-- math.min(math.max(min_y, camera.y), max_y)
+		math.min(camera.y, max_y)
+	)
 end
 
 function love.draw()
@@ -87,11 +113,13 @@ function love.draw()
 	local off_x = love.graphics.getWidth()/2 - camera.x
 	local off_y = love.graphics.getHeight()/2 - camera.y
 
-	love.graphics.draw(stand, off_x + player.x, off_y + player.y)
+	for _,v in ipairs(entities) do
+		v:draw(off_x, off_y)
+	end
 
-	love.graphics.setColor(0, 0, 0)
-	love.graphics.print(text, 0, 0)
-	love.graphics.setColor(255, 255, 255)
+	-- love.graphics.setColor(0, 0, 0)
+	-- love.graphics.print(text, 0, 0)
+	-- love.graphics.setColor(255, 255, 255)
 
 	-- camera:unset()
 end
