@@ -1,4 +1,7 @@
+-- http://www.love2d.org/wiki/Minimalist_Sound_Manager
+
 dofile("camera.lua")
+dofile("tiled.lua")
 
 function love.load()
 
@@ -7,9 +10,24 @@ function love.load()
 	love.graphics.setNewFont(20)
 	love.graphics.setBackgroundColor(255, 255, 255)
 
+	TiledMap_Load("level.tmx")
+
 	stand = love.graphics.newImage("stand.png")
 
-	camera:setScale(0.5, 0.5)
+	sound = {
+		jump = love.audio.newSource("jump.wav", "static")
+	}
+
+	music_list = {
+		"CHRIS31B.IT"
+	}
+
+	music = love.audio.newSource( music_list[1] )
+	music:setVolume(0.3)
+
+	-- camera:setScale(0.5, 0.5)
+
+	music:play()
 end
 
 player = { x = 10, y = 10 }
@@ -62,13 +80,18 @@ function love.update(dt)
 end
 
 function love.draw()
-	camera:set()
+	-- camera:set()
 
-	love.graphics.draw(stand, player.x, player.y)
+	TiledMap_DrawNearCam(camera.x, camera.y)
+
+	local off_x = love.graphics.getWidth()/2 - camera.x
+	local off_y = love.graphics.getHeight()/2 - camera.y
+
+	love.graphics.draw(stand, off_x + player.x, off_y + player.y)
 
 	love.graphics.setColor(0, 0, 0)
 	love.graphics.print(text, 0, 0)
 	love.graphics.setColor(255, 255, 255)
 
-	camera:unset()
+	-- camera:unset()
 end
