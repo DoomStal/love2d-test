@@ -1,6 +1,6 @@
 require("oop")
 
-Entity = inherits(nil, "Entity")
+Entity = inherits(nil)
 
 Entity.x = 0
 Entity.y = 0
@@ -12,26 +12,20 @@ Entity.animations = {}
 Entity.animation = nil
 Entity.animation_frame = 1
 Entity.animation_time = 0
-
+	
 Entity.color_r = 255
 Entity.color_g = 255
 Entity.color_b = 255
 
 function Entity:update(dt)
-
 	if self.animation then
+		if not self.animation.loop and self.animation_frame == #self.animation.frames then return end
+
 		self.animation_time = self.animation_time + dt * self.animation.rate
-		if self.animation_time > 1 then
-			self.animation_time = 0
-			self.animation_frame = self.animation_frame + 1
-			if self.animation_frame > #self.animation.frames then
-				if self.animation.loop then
-					self.animation_frame = 1
-				else
-					self.animation_frame = #self.animation.frames
-				end
-			end
-		end
+		local ai, af = math.modf(self.animation_time)
+		self.animation_frame = self.animation_frame + ai
+		self.animation_frame = math.fmod(self.animation_frame - 1, #self.animation.frames) + 1
+		self.animation_time = af
 	end
 end
 
@@ -50,29 +44,31 @@ function Entity:draw(off_x, off_y)
 	off_x = math.floor(off_x)
 	off_y = math.floor(off_y)
 
-	if self.animation then
-		self.animation.frames[self.animation_frame]:draw(
-			off_x + self.x - self.width/2,
-			off_y + self.y - self.height,
-			self.flip_x
-		)
-	end
-	--else
+--	if not self.animation then
 		local r,g,b = love.graphics.getColor()
-		love.graphics.setColor(self.color_r, self.color_g, self.color_b)
+		love.graphics.setColor(self.color_r, self.color_g, self.color_b, 128)
 		love.graphics.rectangle(
-			"line",
+			"fill",
 			off_x + self.x - self.width/2,
 			off_y + self.y - self.height,
 			self.width,
 			self.height
 		)
 		love.graphics.setColor(r, g, b)
-	--end
+--	else	
+		if nil ~= self.animation.frames[self.animation_frame] then
+			self.animation.frames[self.animation_frame]:draw(
+				off_x + self.x,
+				off_y + self.y,
+				self.flip_x
+			)
+		end
+--	end
 
 end
 
 EntityMoving = inherits(Entity)
+
 EntityMoving.xv = 0
 EntityMoving.yv = 0
 
@@ -88,8 +84,8 @@ function EntityMoving:update(dt)
 
 	self.on_ground = false
 
-	if self.y > 200 then
-		self.y = 200
+	if self.y > ground_y then
+		self.y = ground_y
 		self.yv = 0
 		self.on_ground = true
 	end
@@ -101,21 +97,25 @@ function EntityMoving:update(dt)
 end
 
 EntityLiving = inherits(EntityMoving)
+
 EntityLiving.key_left = false
 EntityLiving.key_right = false
 EntityLiving.key_jump = false
+
+EntityLiving.jump_vel = -7.5
+EntityLiving.move_spd = 3.5
 
 function EntityLiving:update(dt)
 	EntityMoving.update(self, dt)
 
 	if(self.on_ground) then
 		if(self.key_jump) then
-			self.yv = -7.5
+			self.yv = self.jump_vel
 			self.on_ground = false
 		end
 	end
 
-	local spd = 3.5
+	local spd = self.move_spd
 
 	if(self.key_left) then
 		self.xv = -spd

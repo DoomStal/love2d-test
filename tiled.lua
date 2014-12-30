@@ -1,244 +1,164 @@
--- see https://love2d.org/wiki/TiledMapLoader for latest version
--- loader for "tiled" map editor maps (.tmx,xml-based) http://www.mapeditor.org/
--- supports multiple layers
--- NOTE : function ReplaceMapTileClass (tx,ty,oldTileType,newTileType,fun_callback) end
--- NOTE : function TransmuteMap (from_to_table) end -- from_to_table[old]=new
--- NOTE : function GetMousePosOnMap () return gMouseX+gCamX-gScreenW/2,gMouseY+gCamY-gScreenH/2 end
+require("oop")
+require("image_man")
+require("loadxml")
 
-kTileSize = 32
-kMapTileTypeEmpty = 0
-local floor = math.floor
-local ceil = math.ceil
-local max = math.max
-local min = math.min
-local abs = math.abs
-gTileMap_LayerInvisByName = {}
+function print_rek(t, max_depth, depth)
+	depth = depth or 0
+	if depth > max_depth then return end
 
-function TiledMap_Load (filepath,tilesize,spritepath_removeold,spritepath_prefix)
-    spritepath_removeold = spritepath_removeold or "../"
-    spritepath_prefix = spritepath_prefix or ""
-    kTileSize = tilesize or kTileSize or 32
-    gTileGfx = {}
-   
-    local tiletype,layers = TiledMap_Parse(filepath)
-    gMapLayers = layers
-    for first_gid,path in pairs(tiletype) do
-        path = spritepath_prefix .. string.gsub(path,"^"..string.gsub(spritepath_removeold,"%.","%%."),"")
-        local raw = love.image.newImageData(path)
-        local w,h = raw:getWidth(),raw:getHeight()
-        local gid = first_gid
-        local e = kTileSize
-        for y=0,floor(h/kTileSize)-1 do
-        for x=0,floor(w/kTileSize)-1 do
-            local sprite = love.image.newImageData(kTileSize,kTileSize)
-            sprite:paste(raw,0,0,x*e,y*e,e,e)
-            gTileGfx[gid] = love.graphics.newImage(sprite)
-            gid = gid + 1
-        end
-        end
-    end
+	if(type(t) ~= "table") then
+		print('('..type(t)..") '"..t..'\'')
+		return
+	end
+	if depth == 0 then print('(table) {') end
+	local ident = string.rep(" ", depth)
+	for k,v in pairs(t) do
+		if type(v) ~= "table" then
+			if nil == v then
+				print(' '..ident..k.." = nil'")
+			else
+				print(' '..ident..k.." = ("..type(v)..") '"..v..'\'')
+			end
+		else
+			print(' '..ident..k.." = (table) {")
+			print_rek(v, max_depth, depth+1)
+			print(' '..ident..'}')
+		end
+	end
+	if depth == 0 then print('}') end
 end
 
-function TiledMap_GetMapW () return gMapLayers.width end
-function TiledMap_GetMapH () return gMapLayers.height end
+Tile = inherits(nil)
 
--- returns the mapwidth actually used by tiles
-function TiledMap_GetMapWUsed ()
-    local maxx = 0
-    local miny = 0
-    local maxy = 0
-    for layerid,layer in pairs(gMapLayers) do 
-        if (type(layer) == "table") then for ty,row in pairs(layer) do
-            if (type(row) == "table") then for tx,t in pairs(row) do 
-                if (t and t ~= kMapTileTypeEmpty) then 
-                    miny = min(miny,ty)
-                    maxy = max(maxy,ty)
-                    maxx = max(maxx,tx)
-                end
-            end end
-        end end
-    end
-    return maxx + 1,miny,maxy+1
+function Tile:init(image_name, x, y, w, h)
+	self.image = ImageManager:get(image_name)
+	self.x = x or 0
+	self.y = y or 0
+	local iw,ih = self.image:getDimensions()
+	self.w = w or iw
+	self.h = h or ih
+	self.quad = love.graphics.newQuad(self.x, self.y, self.w, self.h, iw, ih)
 end
 
--- x,y= position for nearest-distance(square,not round), z= layer, maxrad= optional limit for searching
--- returns x,y
--- if x,y can be far outside map, set a sensible maxrad, otherwise it'll get very slow since searching outside map isn't optimized
-function TiledMap_GetNearestTileByTypeOnLayer (x,y,z,iTileType,maxrad)
-    local w = TiledMap_GetMapW()
-    local h = TiledMap_GetMapW()
-    local maxrad2 = max(x,w-x,y,h-y) if (maxrad) then maxrad2 = min(maxrad2,maxrad) end
-    if (TiledMap_GetMapTile(x,y,z) == iTileType) then return x,y end
-    for r = 1,maxrad2 do 
-        for i=-r,r do 
-            local xa,ya = x+i,y-r if (TiledMap_GetMapTile(xa,ya,z) == iTileType) then return xa,ya end -- top
-            local xa,ya = x+i,y+r if (TiledMap_GetMapTile(xa,ya,z) == iTileType) then return xa,ya end -- bot
-            local xa,ya = x-r,y+i if (TiledMap_GetMapTile(xa,ya,z) == iTileType) then return xa,ya end -- left
-            local xa,ya = x+r,y+i if (TiledMap_GetMapTile(xa,ya,z) == iTileType) then return xa,ya end -- right
-        end
-    end
+function Tile:draw(off_x, off_y, flip_x, flip_y, flip_diag)
+	love.graphics.draw(self.image, self.quad, off_x, off_y)
 end
 
-function TiledMap_GetMapTile (tx,ty,layerid) -- coords in tiles
-    local row = gMapLayers[layerid][ty]
-    return row and row[tx] or kMapTileTypeEmpty
+Layer = inherits(nil)
+
+function Layer:init(tw, th, w, h)
+	tw = tw or 1
+	th = th or 1
+	w = w or 0
+	h = h or 0
+
+	self.tilewidth = tw
+	self.tileheight = th
+	self.width = w
+	self.height = h
+	self.tiles = {}
 end
 
-function TiledMap_SetMapTile (tx,ty,layerid,v) -- coords in tiles
-    local row = gMapLayers[layerid][ty]
-    if (not row) then row = {} gMapLayers[layerid][ty] = row end
-    row[tx] = v
+function Layer:draw(tileset, off_x, off_y)
+	local sw = love.graphics.getWidth()
+	local sh = love.graphics.getHeight()
+
+	local minx = math.max(1, math.floor(-off_x/self.tilewidth))
+	local maxx = math.min(self.width, math.floor( (sw-off_x)/self.tilewidth ))
+	local miny = math.max(1, math.floor(-off_y/self.tileheight))
+	local maxy = math.min(self.height, math.floor( (sh-off_y)/self.tileheight ))
+
+	for y = miny, maxy do
+		for x = minx, maxx do
+			local t = tileset[self.tiles[y][x]]
+--			print(self.tiles[y][x])
+			if t then
+				t:draw(
+					x*self.tilewidth + off_x,
+					y*self.tileheight + off_y
+				)
+			end
+		end
+	end
+--	os.exit(0)
 end
 
--- todo : maybe optimize during parse xml for types registered as to-be-listed before parsing ?
-function TiledMap_ListAllOfTypeOnLayer (layerid,iTileType)
-    local res = {}
-    local w = TiledMap_GetMapW()
-    local h = TiledMap_GetMapH()
-    for x=0,w-1 do 
-    for y=0,h-1 do 
-        if (TiledMap_GetMapTile(x,y,layerid) == iTileType) then table.insert(res,{x=x,y=y}) end
-    end
-    end
-    return res
+Map = inherits(nil)
+
+Map.tilewidth = 32
+Map.tileheight = 32
+Map.width = 0
+Map.height = 0
+
+Map.tiles = {}
+
+Map.bg_layers = {}
+Map.level = nil
+Map.fg_layers = {}
+
+function Map.load(file)
+	local xml = LoadXML(love.filesystem.read(file))
+
+	local map = Map:new()
+
+	local nmap = xml[2]
+
+	-- load tilesets and layers
+	for _, sub in ipairs(nmap) do
+		if sub.label == "tileset" then
+			local firstgid = tonumber(sub.xarg.firstgid)
+			local ntileset = sub
+			if sub.xarg.source then
+				local xml_t = LoadXML(love.filesystem.read(sub.xarg.source))
+				ntileset = xml_t[2]
+			end
+			local tw = tonumber(ntileset.xarg.tilewidth)
+			local th = tonumber(ntileset.xarg.tileheight)
+			local nimg = ntileset[1]
+			local imagefile = nimg.xarg.source
+			local iw = math.floor(tonumber(nimg.xarg.width) / tw)
+			local ih = math.floor(tonumber(nimg.xarg.height) / th)
+			local j = 0
+			while j < ih do
+				local qy = j * th
+
+				local i = 0
+				while i < iw do
+					local qx = i * tw
+					map.tiles[firstgid + iw*j + i] = Tile:new(imagefile, qx, qy, tw, th)
+					i = i + 1
+				end
+				j = j + 1
+			end
+		end
+		if sub.label == "layer" then
+			local lw = tonumber(sub.xarg.width)
+			local lh = tonumber(sub.xarg.height)
+
+			local layer = Layer:new(map.tilewidth, map.tileheight, lw, lh)
+
+			local ndata = sub[1]
+			for j=1, lh do
+				for i=1, lw do
+					local ntile = ndata[(j-1)*lw + i]
+					if not ntile then error("broken tmx") end
+					if not layer.tiles[j] then layer.tiles[j] = {} end
+					layer.tiles[j][i] = tonumber(ntile.xarg.gid)
+				end
+			end
+
+			if not map.level then
+				if sub.xarg.name == "level" then
+					map.level = layer
+				else
+					table.insert(map.bg_layers, layer)
+				end
+			else
+				table.insert(map.fg_layers, layer)
+			end
+		end
+	end
+
+	return map
 end
 
-function TiledMap_GetLayerZByName (layername) for z,layer in ipairs(gMapLayers) do if (layer.name == layername) then return z end end end
-function TiledMap_SetLayerInvisByName (layername) gTileMap_LayerInvisByName[layername] = true end
-
-function TiledMap_IsLayerVisible (z)
-    local layer = gMapLayers[z]
-    return layer and (not gTileMap_LayerInvisByName[layer.name or "?"])
-end
-
-function TiledMap_GetTilePosUnderMouse (mx,my,camx,camy)
-    return  floor((mx+camx-love.graphics.getWidth()/2)/kTileSize),
-            floor((my+camy-love.graphics.getHeight()/2)/kTileSize)
-end
-
-function TiledMap_DrawNearCam (camx,camy,fun_layercallback)
-    camx,camy = floor(camx),floor(camy)
-    local screen_w = love.graphics.getWidth()
-    local screen_h = love.graphics.getHeight()
-    local minx,maxx = floor((camx-screen_w/2)/kTileSize),ceil((camx+screen_w/2)/kTileSize)
-    local miny,maxy = floor((camy-screen_h/2)/kTileSize),ceil((camy+screen_h/2)/kTileSize)
-    for z = 1,#gMapLayers do 
-    if (fun_layercallback) then fun_layercallback(z,gMapLayers[z]) end
-    if (TiledMap_IsLayerVisible(z)) then
-    for x = minx,maxx do
-    for y = miny,maxy do
-        local gfx = gTileGfx[TiledMap_GetMapTile(x,y,z)]
-        if (gfx) then
-            local sx = x*kTileSize - camx + screen_w/2
-            local sy = y*kTileSize - camy + screen_h/2
-            love.graphics.draw(gfx,sx,sy) -- x, y, r, sx, sy, ox, oy
-        end
-    end
-    end
-    end
-    end
-end
-
-
--- ***** ***** ***** ***** ***** xml parser
-
-
--- LoadXML from http://lua-users.org/wiki/LuaXml
-function LoadXML(s)
-  local function LoadXML_parseargs(s)
-    local arg = {}
-    string.gsub(s, "(%w+)=([\"'])(.-)%2", function (w, _, a)
-    arg[w] = a
-    end)
-    return arg
-  end
-  local stack = {}
-  local top = {}
-  table.insert(stack, top)
-  local ni,c,label,xarg, empty
-  local i, j = 1, 1
-  while true do
-    ni,j,c,label,xarg, empty = string.find(s, "<(%/?)([%w:]+)(.-)(%/?)>", i)
-    if not ni then break end
-    local text = string.sub(s, i, ni-1)
-    if not string.find(text, "^%s*$") then
-      table.insert(top, text)
-    end
-    if empty == "/" then  -- empty element tag
-      table.insert(top, {label=label, xarg=LoadXML_parseargs(xarg), empty=1})
-    elseif c == "" then   -- start tag
-      top = {label=label, xarg=LoadXML_parseargs(xarg)}
-      table.insert(stack, top)   -- new level
-    else  -- end tag
-      local toclose = table.remove(stack)  -- remove top
-      top = stack[#stack]
-      if #stack < 1 then
-        error("nothing to close with "..label)
-      end
-      if toclose.label ~= label then
-        error("trying to close "..toclose.label.." with "..label)
-      end
-      table.insert(top, toclose)
-    end
-    i = j+1
-  end
-  local text = string.sub(s, i)
-  if not string.find(text, "^%s*$") then
-    table.insert(stack[#stack], text)
-  end
-  if #stack > 1 then
-    error("unclosed "..stack[stack.n].label)
-  end
-  return stack[1]
-end
-
-
--- ***** ***** ***** ***** ***** parsing the tilemap xml file
-
-local function getTilesets(node)
-    local tiles = {}
-    for k, sub in ipairs(node) do
-        if (sub.label == "tileset") then
-            tiles[tonumber(sub.xarg.firstgid)] = sub[1].xarg.source
-        end
-    end
-    return tiles
-end
-
-local function getLayers(node)
-    local layers = {}
-    layers.width = 0
-    layers.height = 0
-    for k, sub in ipairs(node) do
-        if (sub.label == "layer") then --  and sub.xarg.name == layer_name
-            layers.width  = max(layers.width ,tonumber(sub.xarg.width ) or 0)
-            layers.height = max(layers.height,tonumber(sub.xarg.height) or 0)
-            local layer = {}
-            table.insert(layers,layer)
-            layer.name = sub.xarg.name
-            --~ print("layername",layer.name)
-            width = tonumber(sub.xarg.width)
-            i = 0
-            j = 0
-            for l, child in ipairs(sub[1]) do
-                if (j == 0) then
-                    layer[i] = {}
-                end
-                layer[i][j] = tonumber(child.xarg.gid)
-                j = j + 1
-                if j >= width then
-                    j = 0
-                    i = i + 1
-                end
-            end
-        end
-    end
-    return layers
-end
-
-function TiledMap_Parse(filename)
-    local xml = LoadXML(love.filesystem.read(filename))
-    local tiles = getTilesets(xml[2])
-    local layers = getLayers(xml[2])
-    return tiles, layers
-end

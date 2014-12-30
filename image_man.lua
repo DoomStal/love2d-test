@@ -1,4 +1,5 @@
 ImageManager = {}
+
 ImageManager.images = {}
 
 function ImageManager:load(name)

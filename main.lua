@@ -11,6 +11,8 @@ require("entity")
 
 entities = Collection:new()
 
+ground_y = 200
+
 function love.load()
 
 	love.graphics.setDefaultFilter("nearest", "nearest")
@@ -23,7 +25,11 @@ function love.load()
 
 	love.graphics.setFont(font)
 
-	TiledMap_Load("level.tmx")
+	background = ImageManager:get("sky.png")
+	background_quad = love.graphics.newQuad(0, 0, love.graphics.getWidth(), love.graphics.getHeight(), background:getDimensions()) 
+
+	map = Map.load("level.tmx")
+--	TiledMap_Load("level.tmx")
 
 	player = EntityLiving:new();
 	player.x = 10
@@ -37,7 +43,7 @@ function love.load()
 	local a = Animation:new()
 	a.rate = 0
 	a.frames = {
-		Frame:new("stand.png", 0, 0, 96, 96, 28, 28)
+		Frame:new("stand.png", 48, 83)
 	}
 	player.animations["stand"] = a
 
@@ -45,23 +51,26 @@ function love.load()
 	a.rate = 15
 	a.loop = true
 	a.frames = {
-		Frame:new("run.png", 0, 0, 96, 96, 28, 25),
-		Frame:new("run.png", 96, 0, 96, 96, 28, 25),
-		Frame:new("run.png", 192, 0, 96, 96, 28, 25),
-		Frame:new("run.png", 288, 0, 96, 96, 28, 25),
-		Frame:new("run.png", 384, 0, 96, 96, 28, 25),
-		Frame:new("run.png", 480, 0, 96, 96, 28, 25)
+		Frame:new("run.png", 48, 81, 0, 0, 96),
+		Frame:new("run.png", 48, 81, 96, 0, 96),
+		Frame:new("run.png", 48, 81, 192, 0, 96),
+		Frame:new("run.png", 48, 81, 288, 0, 96),
+		Frame:new("run.png", 48, 81, 384, 0, 96),
+		Frame:new("run.png", 48, 81, 480, 0, 96),
 	}
 	player.animations["run"] = a
 
 	a = Animation:new()
 	a.rate = 0
 	a.frames = {
-		Frame:new("jump.png", 0, 0, 96, 96, 28, 24)
+		Frame:new("jump.png", 48, 79)
 	}
 	player.animations["jump"] = a
 
 	player:setAnimation("stand")
+
+	player.x = 156
+	player.y = 200
 
 	entities:insert(player)
 
@@ -101,6 +110,7 @@ function love.update(dt)
 	player.key_jump = love.keyboard.isDown("up")
 	player.key_left = love.keyboard.isDown("left")
 	player.key_right = love.keyboard.isDown("right")
+	if love.keyboard.isDown("down") then ground_y = ground_y + 4 end
 
 	for _,v in ipairs(entities) do
 		v:update(dt)
@@ -108,6 +118,7 @@ function love.update(dt)
 
 	camera:setPosition(player.x, player.y - player.height/2)
 
+--[[
 	local min_x = love.graphics.getWidth()/2
 	local max_x = TiledMap_GetMapW()*kTileSize - love.graphics.getWidth()/2
 	-- local min_y = love.graphics.getHeight()/2
@@ -117,23 +128,29 @@ function love.update(dt)
 		-- math.min(math.max(min_y, camera.y), max_y)
 		math.min(camera.y, max_y)
 	)
+]]
 end
 
 function love.draw()
-	-- camera:set()
 
-	TiledMap_DrawNearCam(camera.x, camera.y)
+	love.graphics.draw(background, background_quad, 0, 0)
 
 	local off_x = love.graphics.getWidth()/2 - camera.x
 	local off_y = love.graphics.getHeight()/2 - camera.y
+
+	for _,layer in ipairs(map.bg_layers) do
+		layer:draw(map.tiles, off_x, off_y)
+	end
+	map.level:draw(map.tiles, off_x, off_y)
+	for _,layer in ipairs(map.fg_layers) do
+		layer:draw(map.tiles, off_x, off_y)
+	end
 
 	for _,v in ipairs(entities) do
 		v:draw(off_x, off_y)
 	end
 
-	-- love.graphics.setColor(0, 0, 0)
-	-- love.graphics.print(text, 0, 0)
-	-- love.graphics.setColor(255, 255, 255)
-
-	-- camera:unset()
+	love.graphics.print(math.floor(player.x), 0, 0)
+	love.graphics.print(math.floor(player.y), 0, font:getHeight())
 end
+
