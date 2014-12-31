@@ -11,8 +11,6 @@ require("entity")
 
 entities = Collection:new()
 
-ground_y = 200
-
 function love.load()
 
 	love.graphics.setDefaultFilter("nearest", "nearest")
@@ -26,12 +24,14 @@ function love.load()
 	love.graphics.setFont(font)
 
 	background = ImageManager:get("sky.png")
-	background_quad = love.graphics.newQuad(0, 0, love.graphics.getWidth(), love.graphics.getHeight(), background:getDimensions()) 
+	background_quad = love.graphics.newQuad(0, 0, love.graphics.getWidth(),
+		love.graphics.getHeight(), background:getDimensions())
+
+	print("hello there!")
 
 	map = Map.load("level.tmx")
---	TiledMap_Load("level.tmx")
 
-	player = EntityLiving:new();
+	player = EntityLiving:new()
 	player.x = 10
 	player.y = 10
 	player.width = 40
@@ -39,6 +39,13 @@ function love.load()
 	player.color_r = 255
 	player.color_g = 0
 	player.color_b = 0
+
+	if map.spawn_points[1] then
+		player.x = map.spawn_points[1].x
+		player.y = map.spawn_points[1].y
+	else
+		print("warning: player spawn point not set!")
+	end
 
 	local a = Animation:new()
 	a.rate = 0
@@ -69,29 +76,28 @@ function love.load()
 
 	player:setAnimation("stand")
 
-	player.x = 156
-	player.y = 200
-
 	entities:insert(player)
+
+	love.audio.setVolume(0.3)
 
 	sound = {
 		jump = love.audio.newSource("jump.wav", "static")
 	}
 
---[[
 	music_list = {
 		"CHRIS31B.IT"
 	}
 	music = love.audio.newSource( music_list[1] )
-	music:setVolume(0.3)
 	music:play()
-]]
+
 
 end
 
 function love.keyreleased(key)
 	if(key == "escape") then love.event.quit() end
 end
+
+current_display = 0
 
 function love.focus(f)
 	if f then
@@ -110,7 +116,6 @@ function love.update(dt)
 	player.key_jump = love.keyboard.isDown("up")
 	player.key_left = love.keyboard.isDown("left")
 	player.key_right = love.keyboard.isDown("right")
-	if love.keyboard.isDown("down") then ground_y = ground_y + 4 end
 
 	for _,v in ipairs(entities) do
 		v:update(dt)
@@ -118,17 +123,15 @@ function love.update(dt)
 
 	camera:setPosition(player.x, player.y - player.height/2)
 
---[[
-	local min_x = love.graphics.getWidth()/2
-	local max_x = TiledMap_GetMapW()*kTileSize - love.graphics.getWidth()/2
-	-- local min_y = love.graphics.getHeight()/2
-	local max_y = TiledMap_GetMapH()*kTileSize - love.graphics.getHeight()/2
+	local sw2 = love.graphics.getWidth()/2
+	local sh2 = love.graphics.getHeight()/2
+	local min_x = sw2
+	local max_x = map:getWidth() - sw2
+	local max_y = map:getHeight() - sh2
 	camera:setPosition(
 		math.min(math.max(min_x, camera.x), max_x),
-		-- math.min(math.max(min_y, camera.y), max_y)
 		math.min(camera.y, max_y)
 	)
-]]
 end
 
 function love.draw()
@@ -146,6 +149,10 @@ function love.draw()
 		layer:draw(map.tiles, off_x, off_y)
 	end
 
+	for _, cobj in ipairs(map.collision_objects) do
+		cobj:draw(off_x, off_y)
+	end
+
 	for _,v in ipairs(entities) do
 		v:draw(off_x, off_y)
 	end
@@ -153,4 +160,3 @@ function love.draw()
 	love.graphics.print(math.floor(player.x), 0, 0)
 	love.graphics.print(math.floor(player.y), 0, font:getHeight())
 end
-

@@ -1,5 +1,7 @@
 require("oop")
 
+require("utils")
+
 Entity = inherits(nil)
 
 Entity.x = 0
@@ -12,7 +14,7 @@ Entity.animations = {}
 Entity.animation = nil
 Entity.animation_frame = 1
 Entity.animation_time = 0
-	
+
 Entity.color_r = 255
 Entity.color_g = 255
 Entity.color_b = 255
@@ -45,7 +47,6 @@ function Entity:draw(off_x, off_y)
 	off_y = math.floor(off_y)
 
 --	if not self.animation then
-		local r,g,b = love.graphics.getColor()
 		love.graphics.setColor(self.color_r, self.color_g, self.color_b, 128)
 		love.graphics.rectangle(
 			"fill",
@@ -54,7 +55,7 @@ function Entity:draw(off_x, off_y)
 			self.width,
 			self.height
 		)
-		love.graphics.setColor(r, g, b)
+		love.graphics.lastColor()
 --	else	
 		if nil ~= self.animation.frames[self.animation_frame] then
 			self.animation.frames[self.animation_frame]:draw(
@@ -69,6 +70,8 @@ end
 
 EntityMoving = inherits(Entity)
 
+EntityMoving.nx = 0
+EntityMoving.ny = 0
 EntityMoving.xv = 0
 EntityMoving.yv = 0
 
@@ -79,21 +82,29 @@ function EntityMoving:update(dt)
 
 	self.yv = self.yv + 0.3
 
-	self.x = self.x + self.xv
-	self.y = self.y + self.yv
+	self.nx = self.x + self.xv
+	self.ny = self.y + self.yv
 
 	self.on_ground = false
 
-	if self.y > ground_y then
-		self.y = ground_y
+	local ground_y = map:getHeight()
+
+	if self.ny > ground_y then
+		self.ny = ground_y
 		self.yv = 0
 		self.on_ground = true
+	end
+	map.level:collide(self)
+	for _, cobj in ipairs(map.collision_objects) do
+		cobj:collide(self)
 	end
 
 	if self.on_ground then
 	else
 		self.yv = self.yv * 0.98
 	end
+	self.x = self.nx
+	self.y = self.ny
 end
 
 EntityLiving = inherits(EntityMoving)
@@ -110,6 +121,7 @@ function EntityLiving:update(dt)
 
 	if(self.on_ground) then
 		if(self.key_jump) then
+			love.audio.play(sound["jump"])
 			self.yv = self.jump_vel
 			self.on_ground = false
 		end

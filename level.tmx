@@ -1272,4 +1272,16 @@
    <tile gid="36"/>
   </data>
  </layer>
+ <objectgroup name="collision">
+  <object x="14" y="213">
+   <polyline points="125,29 169,108 457,31"/>
+  </object>
+  <object x="527" y="233">
+   <polygon points="0,0 100,-100 0,-200 -100,-100"/>
+  </object>
+  <object x="22" y="276" width="108" height="65"/>
+ </objectgroup>
+ <objectgroup name="entity">
+  <object name="start" type="spawn" x="395" y="72" width="30" height="28"/>
+ </objectgroup>
 </map>
