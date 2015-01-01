@@ -103,16 +103,16 @@ function EntityMoving:update(dt)
 
 	self:clearCollision()
 
-	local ground_y = map:getHeight()
+	for i = 1,2 do
+		map.level:collide(map.tiles, self)
+		collideList(self, map.collision_objects)
+	end
 
+	local ground_y = map:getHeight()
 	if self.ny > ground_y then
 		self.ny = ground_y
 		self.yv = 0
 		self.on_ground = true
-	end
-	map.level:collide(self)
-	for _, cobj in ipairs(map.collision_objects) do
-		cobj:collide(self)
 	end
 
 	if self.on_ground then
@@ -121,6 +121,25 @@ function EntityMoving:update(dt)
 	end
 	self.x = self.nx
 	self.y = self.ny
+end
+
+function EntityMoving:draw(off_x, off_y)
+	Entity.draw(self, off_x, off_y)
+
+	love.graphics.setColor(0, 0, 255)
+	if self.ucollided then love.graphics.line(
+		off_x + self.x - self.width/2, off_y + self.y - self.height,
+		off_x + self.x + self.width/2, off_y + self.y - self.height) end
+	if self.dcollided then love.graphics.line(
+		off_x + self.x - self.width/2, off_y + self.y,
+		off_x + self.x + self.width/2, off_y + self.y) end
+	if self.lcollided then love.graphics.line(
+		off_x + self.x - self.width/2, off_y + self.y - self.height,
+		off_x + self.x - self.width/2, off_y + self.y) end
+	if self.rcollided then love.graphics.line(
+		off_x + self.x + self.width/2, off_y + self.y - self.height,
+		off_x + self.x + self.width/2, off_y + self.y) end
+	love.graphics.lastColor()
 end
 
 EntityLiving = inherits(EntityMoving)
@@ -134,14 +153,6 @@ EntityLiving.move_spd = 3.5
 
 function EntityLiving:update(dt)
 	EntityMoving.update(self, dt)
-
-	if(self.on_ground) then
-		if(self.key_jump) then
-			love.audio.play(sound["jump"])
-			self.yv = self.yv + self.jump_vel
-			self:clearCollision()
-		end
-	end
 
 	local spd = self.move_spd
 
@@ -168,8 +179,16 @@ function EntityLiving:update(dt)
 			self.xv = spd
 		end
 	else
-		self.xv = self.xv * 0.7
+		self.xv = self.xv * 0.6
 		if math.abs(self.xv) < 0.5 then self.xv = 0 end
+	end
+
+	if(self.on_ground) then
+		if(self.key_jump) then
+			love.audio.play(sound["jump"])
+			self.yv = self.yv + self.jump_vel
+			-- self:clearCollision()
+		end
 	end
 
 	if self.on_ground then

@@ -82,11 +82,108 @@ function Layer:draw(tileset, off_x, off_y)
 	end
 end
 
-function Layer:collide(entity)
+function Layer:drawCollisions(tileset, off_x, off_y)
+	local sw = love.graphics.getWidth()
+	local sh = love.graphics.getHeight()
+
+	local minx = math.max(player.col_minx, math.floor(-off_x/self.tilewidth))
+	local maxx = math.min(player.col_maxx, math.ceil( (sw-off_x)/self.tilewidth ))
+	local miny = math.max(player.col_miny, math.floor(-off_y/self.tileheight))
+	local maxy = math.min(player.col_maxy, math.ceil( (sh-off_y)/self.tileheight ))
+
+	for y = miny, maxy do
+		for x = minx, maxx do
+			local t = tileset[self.tiles[y][x]]
+			if t then
+--				drawCollisions(t.collision_objects, off_x, off_y)
+				drawCollisions(t.collision_objects,
+					(x-1)*self.tilewidth + off_x,
+					(y-1)*self.tileheight + off_y
+				)
+			end
+		end
+	end
+end
+
+function Layer:collide(tileset, entity)
 	local minx = math.max(1, math.floor( (entity.x-entity.width/2)/self.tilewidth ))
 	local maxx = math.min(self.width, math.ceil( (entity.x+entity.width/2)/self.tilewidth ) + 1)
 	local miny = math.max(1, math.floor( (entity.y-entity.height)/self.tileheight ))
-	local maxy = math.max(self.height, math.ceil( entity.y / self.tileheight ) + 1)
+	local maxy = math.min(self.height, math.ceil( entity.y / self.tileheight ) + 1)
+
+	entity.col_minx = minx
+	entity.col_maxx = maxx
+	entity.col_miny = miny
+	entity.col_maxy = maxy
+
+	for y = miny, maxy do
+		for x = minx, maxx do
+			local t = tileset[self.tiles[y][x]]
+			if t then collideList(entity, t.collision_objects,
+				(x-1)*self.tilewidth,
+				(y-1)*self.tileheight
+			) end
+		end
+	end
+end
+
+function loadCollisionObjects(sub, collision_objects, ox, oy)
+	ox = ox or 0
+	oy = oy or 0
+	for _, nobj in ipairs(sub) do
+		if nobj.label ~= "object" then error("bad object") end
+		if nobj.xarg.width and nobj.xarg.height then
+			local x = tonumber(nobj.xarg.x)
+			local y = tonumber(nobj.xarg.y)
+			local w = tonumber(nobj.xarg.width)
+			local h = tonumber(nobj.xarg.height)
+			table.insert(collision_objects, CollisionDot:new(
+				x, y))
+			table.insert(collision_objects, CollisionSegment:new(
+				x, y, x+w, y))
+			table.insert(collision_objects, CollisionDot:new(
+				x+w, y))
+			table.insert(collision_objects, CollisionSegment:new(
+				x+w, y, x+w, y+h))
+			table.insert(collision_objects, CollisionDot:new(
+				x+w, y+h))
+			table.insert(collision_objects, CollisionSegment:new(
+				x+w, y+h, x, y+h))
+			table.insert(collision_objects, CollisionDot:new(
+				x, y+h))
+			table.insert(collision_objects, CollisionSegment:new(
+				x, y+h, x, y))
+		else
+			local nobjs = nobj[1]
+			if not nobjs then error("bad object") end
+
+			if nobjs.label == "polyline" or nobjs.label == "polygon" then
+				local x = tonumber(nobj.xarg.x)
+				local y = tonumber(nobj.xarg.y)
+				local i = 1
+				local vx1, vy1, vxo, vyo
+				while true do
+					local ni, j, vx, vy = string.find(nobjs.xarg.points, "%s*(-?%d+),(-?%d+)%s*", i)
+					if not ni then break end
+					vx = vx + x
+					vy = vy + y
+					table.insert(collision_objects, CollisionDot:new(vx, vy))
+					if i>1 then
+						table.insert(collision_objects, CollisionSegment:new(
+							vxo, vyo, vx, vy))
+					else
+						vx1, vy1 = vx, vy
+					end
+					vxo, vyo = vx, vy
+					i = j +1
+				end
+				if nobjs.label == "polygon" then
+					table.insert(collision_objects, CollisionSegment:new(
+						vxo, vyo, vx1, vy1))
+				end
+			end
+		end
+	end
 end
 
 Map = inherits(nil)
@@ -147,6 +244,17 @@ function Map.load(file)
 				end
 				j = j + 1
 			end
+			for i=2, #ntileset do
+				local ntile = ntileset[i]
+				if ntile.label == "tile" then
+					local id = tonumber(ntile.xarg.id)
+					if ntile[1].label == "objectgroup" then
+						local tile_collisions = {}
+						loadCollisionObjects(ntile[1], tile_collisions)
+						map.tiles[firstgid + id].collision_objects = tile_collisions
+					end
+				end
+			end
 		end
 		if sub.label == "layer" then
 			local lw = tonumber(sub.xarg.width)
@@ -176,62 +284,7 @@ function Map.load(file)
 		end
 		if sub.label == "objectgroup" then
 			if sub.xarg.name == "collision" then
-				for _, nobj in ipairs(sub) do
-					if nobj.label ~= "object" then error("bad object") end
-					if nobj.xarg.width and nobj.xarg.height then
-						local x = tonumber(nobj.xarg.x)
-						local y = tonumber(nobj.xarg.y)
-						local w = tonumber(nobj.xarg.width)
-						local h = tonumber(nobj.xarg.height)
-						table.insert(map.collision_objects, CollisionDot:new(
-							x, y))
-						table.insert(map.collision_objects, CollisionSegment:new(
-							x, y, x+w, y))
-						table.insert(map.collision_objects, CollisionDot:new(
-							x+w, y))
-						table.insert(map.collision_objects, CollisionSegment:new(
-							x+w, y, x+w, y+h))
-						table.insert(map.collision_objects, CollisionDot:new(
-							x+w, y+h))
-						table.insert(map.collision_objects, CollisionSegment:new(
-							x+w, y+h, x, y+h))
-						table.insert(map.collision_objects, CollisionDot:new(
-							x, y+h))
-						table.insert(map.collision_objects, CollisionSegment:new(
-							x, y+h, x, y))
-					else
-						local nobjs = nobj[1]
-						if not nobjs then error("bad object") end
-
-						if nobjs.label == "polyline" or nobjs.label == "polygon" then
-							local x = tonumber(nobj.xarg.x)
-							local y = tonumber(nobj.xarg.y)
-							print(nobjs.xarg.points)
-							local i = 1
-							local vx1, vy1, vxo, vyo
-							while true do
-								local ni, j, vx, vy = string.find(nobjs.xarg.points, "%s*(-?%d+),(-?%d+)%s*", i)
-								if not ni then break end
-								print(vx, vy)
-								vx = vx + x
-								vy = vy + y
-								table.insert(map.collision_objects, CollisionDot:new(vx, vy))
-								if i>1 then
-									table.insert(map.collision_objects, CollisionSegment:new(
-										vxo, vyo, vx, vy))
-								else
-									vx1, vy1 = vx, vy
-								end
-								vxo, vyo = vx, vy
-								i = j +1
-							end
-							if nobjs.label == "polygon" then
-								table.insert(map.collision_objects, CollisionSegment:new(
-									vxo, vyo, vx1, vy1))
-							end
-						end
-					end
-				end
+				loadCollisionObjects(sub, map.collision_objects)
 			else
 				for _, nobj in ipairs(sub) do
 					if nobj.xarg.type == "spawn" then

@@ -93,6 +93,13 @@ function love.load()
 
 end
 
+function love.keypressed(key)
+	if(key == "r") then
+		player.x = map.spawn_points[1].x
+		player.y = map.spawn_points[1].y
+	end
+end
+
 function love.keyreleased(key)
 	if(key == "escape") then love.event.quit() end
 end
@@ -149,9 +156,8 @@ function love.draw()
 		layer:draw(map.tiles, off_x, off_y)
 	end
 
-	for _, cobj in ipairs(map.collision_objects) do
-		cobj:draw(off_x, off_y)
-	end
+	map.level:drawCollisions(map.tiles, off_x, off_y)
+	drawCollisions(map.collision_objects, off_x, off_y)
 
 	for _,v in ipairs(entities) do
 		v:draw(off_x, off_y)
@@ -159,4 +165,7 @@ function love.draw()
 
 	love.graphics.print(math.floor(player.x), 0, 0)
 	love.graphics.print(math.floor(player.y), 0, font:getHeight())
+
+	love.graphics.print(player.xv, 0, font:getHeight()*3)
+	love.graphics.print(player.yv, 0, font:getHeight()*4)
 end

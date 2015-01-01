@@ -2,6 +2,121 @@
 <map version="1.0" orientation="orthogonal" renderorder="right-down" width="55" height="23" tilewidth="32" tileheight="32" backgroundcolor="#00cdff">
  <tileset firstgid="1" name="tiles" tilewidth="32" tileheight="32">
   <image source="tiles.png" width="512" height="512"/>
+  <tile id="16">
+   <objectgroup draworder="index">
+    <object x="0" y="0" width="32" height="32"/>
+   </objectgroup>
+  </tile>
+  <tile id="17">
+   <objectgroup draworder="index">
+    <object x="0" y="0" width="32" height="32"/>
+   </objectgroup>
+  </tile>
+  <tile id="18">
+   <objectgroup draworder="index">
+    <object x="0" y="0" width="32" height="32"/>
+   </objectgroup>
+  </tile>
+  <tile id="19">
+   <objectgroup draworder="index">
+    <object x="0" y="0" width="32" height="32"/>
+   </objectgroup>
+  </tile>
+  <tile id="20">
+   <objectgroup draworder="index">
+    <object x="0" y="0" width="32" height="32"/>
+   </objectgroup>
+  </tile>
+  <tile id="32">
+   <objectgroup draworder="index">
+    <object x="0" y="0" width="32" height="32"/>
+   </objectgroup>
+  </tile>
+  <tile id="33">
+   <objectgroup draworder="index">
+    <object x="0" y="0" width="32" height="32"/>
+   </objectgroup>
+  </tile>
+  <tile id="34">
+   <objectgroup draworder="index">
+    <object x="0" y="0" width="32" height="32"/>
+   </objectgroup>
+  </tile>
+  <tile id="35">
+   <objectgroup draworder="index">
+    <object x="0" y="0" width="32" height="32"/>
+   </objectgroup>
+  </tile>
+  <tile id="36">
+   <objectgroup draworder="index">
+    <object x="0" y="0" width="32" height="32"/>
+   </objectgroup>
+  </tile>
+  <tile id="64">
+   <objectgroup draworder="index">
+    <object x="0" y="32">
+     <polygon points="0,0 32,-32 32,0"/>
+    </object>
+   </objectgroup>
+  </tile>
+  <tile id="65">
+   <objectgroup draworder="index">
+    <object x="0" y="0" width="32" height="32"/>
+   </objectgroup>
+  </tile>
+  <tile id="66">
+   <objectgroup draworder="index">
+    <object x="0" y="0" width="32" height="32"/>
+   </objectgroup>
+  </tile>
+  <tile id="67">
+   <objectgroup draworder="index">
+    <object x="0" y="0">
+     <polygon points="0,0 32,32 0,32"/>
+    </object>
+   </objectgroup>
+  </tile>
+  <tile id="80">
+   <objectgroup draworder="index">
+    <object x="0" y="0" width="32" height="32"/>
+   </objectgroup>
+  </tile>
+  <tile id="81">
+   <objectgroup draworder="index">
+    <object x="0" y="0" width="32" height="32"/>
+   </objectgroup>
+  </tile>
+  <tile id="82">
+   <objectgroup draworder="index">
+    <object x="0" y="0" width="32" height="32"/>
+   </objectgroup>
+  </tile>
+  <tile id="83">
+   <objectgroup draworder="index">
+    <object x="0" y="0" width="32" height="32"/>
+   </objectgroup>
+  </tile>
+  <tile id="97">
+   <objectgroup draworder="index">
+    <object x="0" y="0">
+     <polygon points="0,0 32,32 0,32"/>
+    </object>
+   </objectgroup>
+  </tile>
+  <tile id="98">
+   <objectgroup draworder="index">
+    <object x="0" y="32">
+     <polygon points="0,0 32,-32 32,0"/>
+    </object>
+   </objectgroup>
+  </tile>
+  <tile id="112">
+   <objectgroup draworder="index">
+    <object x="0" y="0">
+     <polyline points="0,0 32,0"/>
+    </object>
+   </objectgroup>
+  </tile>
  </tileset>
  <layer name="level" width="55" height="23">
   <data>
@@ -1273,18 +1388,14 @@
   </data>
  </layer>
  <objectgroup name="collision">
-  <object x="14" y="213">
-   <polyline points="193,-17 145,115 544,72"/>
+  <object x="625" y="227">
+   <polygon points="8,-48 143,-97 -2,-250 -139,-116"/>
   </object>
-  <object x="527" y="233">
-   <polygon points="8,16 143,-97 0,-200 -165,-92"/>
-  </object>
-  <object x="22" y="276" width="108" height="65"/>
-  <object x="249" y="354">
-   <polyline points="-110,69 93,-86 309,23"/>
+  <object x="208" y="193">
+   <polyline points="-209,-159 -173,133 -42,179"/>
   </object>
  </objectgroup>
  <objectgroup name="entity">
-  <object name="start" type="spawn" x="222" y="227" width="30" height="28"/>
+  <object name="start" type="spawn" x="272" y="61" width="30" height="28"/>
  </objectgroup>
 </map>
