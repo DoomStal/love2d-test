@@ -35,8 +35,9 @@ end
 
 -- simple implementation
 function CollisionDot:collide(entity, ox, oy)
-	if ox+self.x > entity.nx - entity.width/2 and ox+self.x < entity.nx + entity.width/2 then
-		if entity.ny >= oy+self.y and entity.y <= oy+self.y then
+	if ox+self.x > math.max(entity.x, entity.nx) - entity.width/2
+	and ox+self.x < math.min(entity.x, entity.nx) + entity.width/2 then
+		if entity.ny > oy+self.y and entity.y <= oy+self.y then
 			entity.ny = oy+self.y
 			entity.yv = 0
 			entity.on_ground = true
@@ -106,45 +107,35 @@ function CollisionSegment:collide(entity, ox, oy)
 	if self.ny > -0.5 then slide = true end
 	if math.abs(entity.xv) < 0.01 and not top then hard = true end
 
-	if (right and entity.lcollided) or (not right and entity.rcollided)
-	or (top and entity.dcollided) or (not top and entity.ucollided) then hard = true end
-
 	if d1 >= 0 and d2 < 0 then
-		local cx = x1 + ((x2-x1)*(d1-0.1))/(d1-d2)
-		local cy = y1 + ((y2-y1)*(d1-0.1))/(d1-d2)
+		local cx = x1 + ((x2-x1)*(d1-0.01))/(d1-d2)
+		local cy = y1 + ((y2-y1)*(d1-0.01))/(d1-d2)
 
-		if (cx >= ox+math.min(self.x1, self.x2) and cx <= ox+math.max(self.x1, self.x2))
-		or (cy >= oy+math.min(self.y1, self.y2) and cy <= oy+math.max(self.y1, self.y2)) then
+		if (cx > ox+math.min(self.x1, self.x2) and cx < ox+math.max(self.x1, self.x2))
+		or (cy > oy+math.min(self.y1, self.y2) and cy <= oy+math.max(self.y1, self.y2)) then
 
-			entity.nx = entity.nx - self.nx*(d2-0.01)
-			entity.ny = entity.ny - self.ny*(d2-0.01)
-			-- entity.nx = cx - cornerx
-			-- entity.ny = cy - cornery
+			if self.y1 ~= self.y2 then entity.nx = cx - cornerx end
+			if self.x1 ~= self.x2 then entity.ny = cy - cornery end
 
-			-- local dv = self.nx * entity.xv + self.ny * entity.yv
-			-- entity.xv = entity.xv - self.nx * (dv+0.1)
-			-- entity.yv = entity.yv - self.ny * (dv+0.1)
-			if not slide then
-				if hard then
-					entity.nx = cx - cornerx
-					entity.ny = cy - cornery
+			local dv = self.nx * entity.xv + self.ny * entity.yv
+			entity.xv = entity.xv - self.nx * (dv+0.1)
+			entity.yv = entity.yv - self.ny * (dv+0.1)
+
+			if self.x1 ~= self.x2 then
+				if not top then
+					entity.on_ground = true
+					entity.yv = 0
+					if self.y1 < self.y2 then
+						entity.lcorner = { x=self.ex, y=self.ey }
+					else
+						entity.rcorner = { x=self.ex, y=self.ey }
+					end
 				end
-
-				local dv = self.nx * entity.xv + self.ny * entity.yv
-				entity.xv = entity.xv - self.nx * (dv+0.1)
-				entity.yv = entity.yv - self.ny * (dv+0.1)
-
-				assert(not top)
-				entity.on_ground = true
-				if self.y1 < self.y2 then
-					entity.lcorner = { x=self.ex, y=self.ey }
-				else
-					entity.rcorner = { x=self.ex, y=self.ey }
-				end
+				if top then entity.ucollided = true else entity.dcollided = true end
 			end
-
-			if right then entity.rcollided = true else entity.lcollided = true end
-			if top then entity.ucollided = true else entity.dcollided = true end
+			if self.y1 ~= self.y2 then
+				if right then entity.rcollided = true else entity.lcollided = true end
+			end
 
 			return true
 		end

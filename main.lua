@@ -27,8 +27,6 @@ function love.load()
 	background_quad = love.graphics.newQuad(0, 0, love.graphics.getWidth(),
 		love.graphics.getHeight(), background:getDimensions())
 
-	print("hello there!")
-
 	map = Map.load("level.tmx")
 
 	player = EntityLiving:new()
@@ -90,18 +88,26 @@ function love.load()
 	music = love.audio.newSource( music_list[1] )
 	music:play()
 
-
 end
 
+frame_by_frame = false
+frame_next = false
+
 function love.keypressed(key)
-	if(key == "r") then
+	if key == "r" then
 		player.x = map.spawn_points[1].x
 		player.y = map.spawn_points[1].y
+	end
+	if key == "f" then
+		frame_by_frame = not frame_by_frame
+	end
+	if key == " " then
+		frame_next = true
 	end
 end
 
 function love.keyreleased(key)
-	if(key == "escape") then love.event.quit() end
+	if key == "escape" then love.event.quit() end
 end
 
 current_display = 0
@@ -124,8 +130,11 @@ function love.update(dt)
 	player.key_left = love.keyboard.isDown("left")
 	player.key_right = love.keyboard.isDown("right")
 
+	if not frame_by_frame or frame_next then
+		frame_next = false
 	for _,v in ipairs(entities) do
 		v:update(dt)
+	end
 	end
 
 	camera:setPosition(player.x, player.y - player.height/2)
@@ -163,8 +172,8 @@ function love.draw()
 		v:draw(off_x, off_y)
 	end
 
-	love.graphics.print(math.floor(player.x), 0, 0)
-	love.graphics.print(math.floor(player.y), 0, font:getHeight())
+	love.graphics.print(player.x, 0, 0)
+	love.graphics.print(player.y, 0, font:getHeight())
 
 	love.graphics.print(player.xv, 0, font:getHeight()*3)
 	love.graphics.print(player.yv, 0, font:getHeight()*4)

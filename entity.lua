@@ -93,34 +93,38 @@ function EntityMoving:clearCollision()
 	self.dcollided = false
 end
 
+function EntityMoving:tryMove(dx, dy)
+	self.nx = self.x + dx
+	self.ny = self.y + dy
+
+	map.level:collide(map.tiles, self)
+	collideList(self, map.collision_objects)
+
+	self.x = self.nx
+	self.y = self.ny
+end
+
 function EntityMoving:update(dt)
 	Entity.update(self, dt)
 
-	self.yv = self.yv + 0.3
-
-	self.nx = self.x + self.xv
-	self.ny = self.y + self.yv
-
 	self:clearCollision()
 
-	for i = 1,2 do
-		map.level:collide(map.tiles, self)
-		collideList(self, map.collision_objects)
+	if math.abs(self.xv) > 0.1 or math.abs(self.yv) > 0.1 then
+		self:tryMove(self.xv, self.yv)
 	end
 
-	local ground_y = map:getHeight()
-	if self.ny > ground_y then
-		self.ny = ground_y
-		self.yv = 0
-		self.on_ground = true
-	end
+	self.yv = self.yv + 0.3
+
+--	if self.yv > 0 then
+		self:tryMove(0, 0.1)
+--	end
 
 	if self.on_ground then
+		self.yv = 0
 	else
+		self.xv = self.xv * 0.98
 		self.yv = self.yv * 0.98
 	end
-	self.x = self.nx
-	self.y = self.ny
 end
 
 function EntityMoving:draw(off_x, off_y)
@@ -180,13 +184,14 @@ function EntityLiving:update(dt)
 		end
 	else
 		self.xv = self.xv * 0.6
-		if math.abs(self.xv) < 0.5 then self.xv = 0 end
+		if math.abs(self.xv) < 0.1 then self.xv = 0 end
 	end
 
 	if(self.on_ground) then
 		if(self.key_jump) then
 			love.audio.play(sound["jump"])
-			self.yv = self.yv + self.jump_vel
+			self.yv = self.jump_vel
+			self.on_ground = false
 			-- self:clearCollision()
 		end
 	end
