@@ -76,6 +76,22 @@ EntityMoving.xv = 0
 EntityMoving.yv = 0
 
 EntityMoving.on_ground = false
+EntityMoving.lcorner = nil
+EntityMoving.rcorner = nil
+EntityMoving.lcollided = false
+EntityMoving.rcollided = false
+EntityMoving.ucollided = false
+EntityMoving.dcollided = false
+
+function EntityMoving:clearCollision()
+	self.on_ground = false
+	self.lcorner = nil
+	self.rcorner = nil
+	self.lcollided = false
+	self.rcollided = false
+	self.ucollided = false
+	self.dcollided = false
+end
 
 function EntityMoving:update(dt)
 	Entity.update(self, dt)
@@ -85,7 +101,7 @@ function EntityMoving:update(dt)
 	self.nx = self.x + self.xv
 	self.ny = self.y + self.yv
 
-	self.on_ground = false
+	self:clearCollision()
 
 	local ground_y = map:getHeight()
 
@@ -122,19 +138,35 @@ function EntityLiving:update(dt)
 	if(self.on_ground) then
 		if(self.key_jump) then
 			love.audio.play(sound["jump"])
-			self.yv = self.jump_vel
-			self.on_ground = false
+			self.yv = self.yv + self.jump_vel
+			self:clearCollision()
 		end
 	end
 
 	local spd = self.move_spd
 
 	if(self.key_left) then
-		self.xv = -spd
 		self.flip_x = true
+		if self.lcorner then
+			self.xv = -spd * self.lcorner.x
+			self.yv = -spd * self.lcorner.y
+		elseif self.rcorner then
+			self.xv = -spd * self.rcorner.x
+			self.yv = -spd * self.rcorner.y
+		else
+			self.xv = -spd
+		end
 	elseif(self.key_right) then
-		self.xv = spd
 		self.flip_x = false
+		if self.rcorner then
+			self.xv = spd * self.rcorner.x
+			self.yv = spd * self.rcorner.y
+		elseif self.lcorner then
+			self.xv = spd * self.lcorner.x
+			self.yv = spd * self.lcorner.y
+		else
+			self.xv = spd
+		end
 	else
 		self.xv = self.xv * 0.7
 		if math.abs(self.xv) < 0.5 then self.xv = 0 end

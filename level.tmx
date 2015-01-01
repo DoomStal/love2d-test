@@ -1274,14 +1274,17 @@
  </layer>
  <objectgroup name="collision">
   <object x="14" y="213">
-   <polyline points="125,29 169,108 457,31"/>
+   <polyline points="193,-17 145,115 544,72"/>
   </object>
   <object x="527" y="233">
-   <polygon points="0,0 100,-100 0,-200 -100,-100"/>
+   <polygon points="8,16 143,-97 0,-200 -165,-92"/>
   </object>
   <object x="22" y="276" width="108" height="65"/>
+  <object x="249" y="354">
+   <polyline points="-110,69 93,-86 309,23"/>
+  </object>
  </objectgroup>
  <objectgroup name="entity">
-  <object name="start" type="spawn" x="395" y="72" width="30" height="28"/>
+  <object name="start" type="spawn" x="222" y="227" width="30" height="28"/>
  </objectgroup>
 </map>

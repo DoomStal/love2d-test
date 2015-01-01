@@ -183,12 +183,20 @@ function Map.load(file)
 						local y = tonumber(nobj.xarg.y)
 						local w = tonumber(nobj.xarg.width)
 						local h = tonumber(nobj.xarg.height)
+						table.insert(map.collision_objects, CollisionDot:new(
+							x, y))
 						table.insert(map.collision_objects, CollisionSegment:new(
 							x, y, x+w, y))
+						table.insert(map.collision_objects, CollisionDot:new(
+							x+w, y))
 						table.insert(map.collision_objects, CollisionSegment:new(
 							x+w, y, x+w, y+h))
+						table.insert(map.collision_objects, CollisionDot:new(
+							x+w, y+h))
 						table.insert(map.collision_objects, CollisionSegment:new(
 							x+w, y+h, x, y+h))
+						table.insert(map.collision_objects, CollisionDot:new(
+							x, y+h))
 						table.insert(map.collision_objects, CollisionSegment:new(
 							x, y+h, x, y))
 					else
@@ -207,6 +215,7 @@ function Map.load(file)
 								print(vx, vy)
 								vx = vx + x
 								vy = vy + y
+								table.insert(map.collision_objects, CollisionDot:new(vx, vy))
 								if i>1 then
 									table.insert(map.collision_objects, CollisionSegment:new(
 										vxo, vyo, vx, vy))
