@@ -95,7 +95,6 @@ function Layer:drawCollisions(tileset, off_x, off_y)
 		for x = minx, maxx do
 			local t = tileset[self.tiles[y][x]]
 			if t then
---				drawCollisions(t.collision_objects, off_x, off_y)
 				drawCollisions(t.collision_objects,
 					(x-1)*self.tilewidth + off_x,
 					(y-1)*self.tileheight + off_y
@@ -105,7 +104,7 @@ function Layer:drawCollisions(tileset, off_x, off_y)
 	end
 end
 
-function Layer:collide(tileset, entity)
+function Layer:collideEntity(tileset, entity, dx, dy)
 	local minx = math.max(1, math.floor( (entity.x-entity.width/2)/self.tilewidth ))
 	local maxx = math.min(self.width, math.ceil( (entity.x+entity.width/2)/self.tilewidth ) + 1)
 	local miny = math.max(1, math.floor( (entity.y-entity.height)/self.tileheight ))
@@ -116,15 +115,28 @@ function Layer:collide(tileset, entity)
 	entity.col_miny = miny
 	entity.col_maxy = maxy
 
+	local toi, cnx, cny, cx, cy
+
 	for y = miny, maxy do
 		for x = minx, maxx do
 			local t = tileset[self.tiles[y][x]]
-			if t then collideList(entity, t.collision_objects,
-				(x-1)*self.tilewidth,
-				(y-1)*self.tileheight
-			) end
+			if t then
+				local toi2, cnx2, cny2, cx2, cy2 = collideList(
+					entity.collision_object,
+					entity.x,
+					entity.y,
+					dx,
+					dy,
+					t.collision_objects,
+					(x-1)*self.tilewidth,
+					(y-1)*self.tileheight
+				)
+				if not toi or (toi2 and toi2 < toi) then toi, cnx, cny, cx, cy = toi2, cnx2, cny2, cx2, cy2 end
+			end
 		end
 	end
+
+	return toi, cnx, cny, cx, cy
 end
 
 function loadCollisionObjects(sub, collision_objects, ox, oy)
@@ -137,22 +149,12 @@ function loadCollisionObjects(sub, collision_objects, ox, oy)
 			local y = tonumber(nobj.xarg.y)
 			local w = tonumber(nobj.xarg.width)
 			local h = tonumber(nobj.xarg.height)
-			table.insert(collision_objects, CollisionDot:new(
-				x, y))
-			table.insert(collision_objects, CollisionSegment:new(
-				x, y, x+w, y))
-			table.insert(collision_objects, CollisionDot:new(
-				x+w, y))
-			table.insert(collision_objects, CollisionSegment:new(
-				x+w, y, x+w, y+h))
-			table.insert(collision_objects, CollisionDot:new(
-				x+w, y+h))
-			table.insert(collision_objects, CollisionSegment:new(
-				x+w, y+h, x, y+h))
-			table.insert(collision_objects, CollisionDot:new(
-				x, y+h))
-			table.insert(collision_objects, CollisionSegment:new(
-				x, y+h, x, y))
+			table.insert(collision_objects, CollisionPolygon:new({
+				CollisionSegment:new(x, y, x+w, y),
+				CollisionSegment:new(x+w, y, x+w, y+h),
+				CollisionSegment:new(x+w, y+h, x, y+h),
+				CollisionSegment:new(x, y+h, x, y)
+			}))
 		else
 			local nobjs = nobj[1]
 			if not nobjs then error("bad object") end
@@ -162,14 +164,14 @@ function loadCollisionObjects(sub, collision_objects, ox, oy)
 				local y = tonumber(nobj.xarg.y)
 				local i = 1
 				local vx1, vy1, vxo, vyo
+				local seg_list = {}
 				while true do
 					local ni, j, vx, vy = string.find(nobjs.xarg.points, "%s*(-?%d+),(-?%d+)%s*", i)
 					if not ni then break end
 					vx = vx + x
 					vy = vy + y
-					table.insert(collision_objects, CollisionDot:new(vx, vy))
 					if i>1 then
-						table.insert(collision_objects, CollisionSegment:new(
+						table.insert(seg_list, CollisionSegment:new(
 							vxo, vyo, vx, vy))
 					else
 						vx1, vy1 = vx, vy
@@ -178,9 +180,10 @@ function loadCollisionObjects(sub, collision_objects, ox, oy)
 					i = j +1
 				end
 				if nobjs.label == "polygon" then
-					table.insert(collision_objects, CollisionSegment:new(
+					table.insert(seg_list, CollisionSegment:new(
 						vxo, vyo, vx1, vy1))
 				end
+				table.insert(collision_objects, CollisionPolygon:new(seg_list))
 			end
 		end
 	end

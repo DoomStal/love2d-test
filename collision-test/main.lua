@@ -35,15 +35,20 @@ function CollisionSegment:collideDot(x, y, ox, oy, dx, dy, sox, soy)
 	x = x + ox
 	y = y + oy
 
-	local d = (x - (sox+self.x1))*self.nx + (y - (soy+self.y1))*self.ny
-	local nd = ((x+dx) - (sox+self.x1))*self.nx + ((y+dy) - (soy+self.y1))*self.ny
+	local x1 = self.x1 + sox
+	local y1 = self.y1 + soy
+	local x2 = self.x2 + sox
+	local y2 = self.y2 + soy
+
+	local d = (x - x1)*self.nx + (y - y1)*self.ny
+	local nd = ((x+dx) - x1)*self.nx + ((y+dy) - y1)*self.ny
 
 	if d > -eps and nd < 0 then
 		local toi = d / (d - nd)
 		local cx, cy = x + dx*toi, y + dy*toi
 
-		if cx+eps > math.min(sox+self.x1, sox+self.x2) and cx-eps < math.max(sox+self.x1, sox+self.x2)
-		and cy+eps > math.min(soy+self.y1, soy+self.y2) and cy-eps < math.max(soy+self.y1, soy+self.y2) then
+		if cx+eps > math.min(x1, x2) and cx-eps < math.max(x1, x2)
+		and cy+eps > math.min(y1, y2) and cy-eps < math.max(y1, y2) then
 			return toi, self.nx, self.ny, cx, cy
 		end
 	end
@@ -96,6 +101,17 @@ function CollisionPolygon:draw(off_x, off_y)
 	end
 end
 
+function CollisionPolygon:collidePolygon(poly, ox, oy, dx, dy, sox, soy)
+	local toi, cnx, cny, cx, cy
+
+	for _,seg in ipairs(self.list) do
+		local toi2, cnx2, cny2, cx2, cy2 = seg:collidePolygon(poly, ox, oy, dx, dy, sox, soy)
+		if not toi or (toi2 and toi2 < toi) then toi, cnx, cny, cx, cy = toi2, cnx2, cny2, cx2, cy2 end
+	end
+
+	return toi, cnx, cny, cx, cy
+end
+
 function love.load()
 
 	col1 = CollisionSegment:new(0, 0, 100, 0)
@@ -145,13 +161,13 @@ function love.update(dt)
 
 	if love.mouse.isDown("l") then
 		if sel == "col1_1" then
-			col1.x1 = love.mouse.getX() - ox1
-			col1.y1 = love.mouse.getY() - oy1
-			col1:update()
-		elseif sel == "col1_2" then
-			col1.x2 = love.mouse.getX() - ox1
-			col1.y2 = love.mouse.getY() - oy1
-			col1:update()
+			-- col1.x1 = love.mouse.getX() - ox1
+			-- col1.y1 = love.mouse.getY() - oy1
+			-- col1:update()
+		-- elseif sel == "col1_2" then
+			-- col1.x2 = love.mouse.getX() - ox1
+			-- col1.y2 = love.mouse.getY() - oy1
+			-- col1:update()
 		-- elseif sel == "col2_1" then
 			-- col2.x1 = love.mouse.getX() - ox2
 			-- col2.y1 = love.mouse.getY() - oy2
@@ -179,7 +195,8 @@ end
 function love.draw()
 
 	love.graphics.setColor(255, 0, 0)
-	col1:draw(ox1, oy1)
+	-- col1:draw(ox1, oy1)
+	col:draw(ox1, oy1)
 
 	love.graphics.setColor(0, 96, 128)
 	col:draw(ox2, oy2)
@@ -189,7 +206,8 @@ function love.draw()
 
 	local nx, ny = 0, 0
 
-	local toi, cnx, cny, cx, cy = col1:collidePolygon(col, ox2, oy2, xv, yv, ox1, oy1)
+	-- local toi, cnx, cny, cx, cy = col1:collidePolygon(col, ox2, oy2, xv, yv, ox1, oy1)
+	local toi, cnx, cny, cx, cy = col:collidePolygon(col, ox2, oy2, xv, yv, ox1, oy1)
 
 	if toi then
 		nx = xv * toi

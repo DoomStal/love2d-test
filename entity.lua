@@ -70,59 +70,89 @@ end
 
 EntityMoving = inherits(Entity)
 
-EntityMoving.nx = 0
-EntityMoving.ny = 0
 EntityMoving.xv = 0
 EntityMoving.yv = 0
 
-EntityMoving.on_ground = false
-EntityMoving.lcorner = nil
-EntityMoving.rcorner = nil
-EntityMoving.lcollided = false
-EntityMoving.rcollided = false
-EntityMoving.ucollided = false
-EntityMoving.dcollided = false
+EntityMoving.collision_object = nil
 
-function EntityMoving:clearCollision()
-	self.on_ground = false
-	self.lcorner = nil
-	self.rcorner = nil
-	self.lcollided = false
-	self.rcollided = false
-	self.ucollided = false
-	self.dcollided = false
+EntityMoving.on_ground = false
+EntityMoving.ground_nx = 0
+EntityMoving.ground_ny = 0
+
+EntityMoving.friction = 0.5
+
+function EntityMoving:makeCollisionBox()
+	self.collision_object = CollisionPolygon:new({
+		CollisionSegment:new(-self.width/2, -self.height, self.width/2, -self.height),
+		CollisionSegment:new(self.width/2, -self.height, self.width/2, 0),
+		CollisionSegment:new(self.width/2, 0, -self.width/2, 0),
+		CollisionSegment:new(-self.width/2, 0, -self.width/2, -self.height)
+	})
 end
 
 function EntityMoving:tryMove(dx, dy)
-	self.nx = self.x + dx
-	self.ny = self.y + dy
+	local toi, cnx, cny, cx, cy = map.level:collideEntity(map.tiles, self, dx, dy)
 
-	map.level:collide(map.tiles, self)
-	collideList(self, map.collision_objects)
+	local toi2, cnx2, cny2, cx2, cy2 = collideList(self.collision_object, self.x, self.y,
+	dx, dy, map.collision_objects, 0, 0)
+	if not toi or (toi2 and toi2 < toi) then toi, cnx, cny, cx, cy = toi2, cnx2, cny2, cx2, cy2 end
 
-	self.x = self.nx
-	self.y = self.ny
+	if toi then
+		self.x = self.x + toi * dx
+		self.y = self.y + toi * dy
+
+		local dv = self.xv * cnx + self.yv * cny
+		self.xv = self.xv - cnx * dv
+		self.yv = self.yv - cny * dv
+
+		self.ground_nx = cnx
+		self.ground_ny = cny
+		if cny < -0.5 then
+			self.on_ground = true
+		end
+
+		return toi
+	else
+		self.x = self.x + dx
+		self.y = self.y + dy
+		return 1
+	end
 end
 
 function EntityMoving:update(dt)
 	Entity.update(self, dt)
 
-	self:clearCollision()
+	self.on_ground = false
+	self.ground_nx = 0
+	self.ground_ny = -1
 
 	if math.abs(self.xv) > 0.1 or math.abs(self.yv) > 0.1 then
-		self:tryMove(self.xv, self.yv)
+		local toi = self:tryMove(self.xv, self.yv)
+		if toi<1 then
+			self:tryMove((1-toi) * self.xv, (1-toi) * self.yv)
+		end
 	end
 
 	self.yv = self.yv + 0.3
 
---	if self.yv > 0 then
+	if not self.on_ground then
 		self:tryMove(0, 0.1)
---	end
+	end
+
+	local ground_y = map:getHeight()
+	if self.y > ground_y then
+		self.y = ground_y
+		self.on_ground = true
+		self.ground_nx = 0
+		self.ground_ny = -1
+	end
 
 	if self.on_ground then
+		self.xv = 0
 		self.yv = 0
 	else
 		self.xv = self.xv * 0.98
+		if math.abs(self.xv) < 0.1 then self.xv = 0 end
 		self.yv = self.yv * 0.98
 	end
 end
@@ -130,19 +160,14 @@ end
 function EntityMoving:draw(off_x, off_y)
 	Entity.draw(self, off_x, off_y)
 
-	love.graphics.setColor(0, 0, 255)
-	if self.ucollided then love.graphics.line(
-		off_x + self.x - self.width/2, off_y + self.y - self.height,
-		off_x + self.x + self.width/2, off_y + self.y - self.height) end
-	if self.dcollided then love.graphics.line(
-		off_x + self.x - self.width/2, off_y + self.y,
-		off_x + self.x + self.width/2, off_y + self.y) end
-	if self.lcollided then love.graphics.line(
-		off_x + self.x - self.width/2, off_y + self.y - self.height,
-		off_x + self.x - self.width/2, off_y + self.y) end
-	if self.rcollided then love.graphics.line(
-		off_x + self.x + self.width/2, off_y + self.y - self.height,
-		off_x + self.x + self.width/2, off_y + self.y) end
+	if self.collision_object then
+		love.graphics.setColor(0, 0, 255)
+		self.collision_object:draw(self.x + off_x, self.y + off_y)
+		love.graphics.lastColor()
+	end
+	love.graphics.setColor(0, 255, 0)
+	love.graphics.line(off_x + self.x, off_y + self.y,
+		off_x + self.x + self.ground_nx * 20, off_y + self.y + self.ground_ny * 20)
 	love.graphics.lastColor()
 end
 
@@ -160,31 +185,28 @@ function EntityLiving:update(dt)
 
 	local spd = self.move_spd
 
+	if self.ground_ny > -0.5 then spd = spd / 2 end
+
 	if(self.key_left) then
 		self.flip_x = true
-		if self.lcorner then
-			self.xv = -spd * self.lcorner.x
-			self.yv = -spd * self.lcorner.y
-		elseif self.rcorner then
-			self.xv = -spd * self.rcorner.x
-			self.yv = -spd * self.rcorner.y
+		if self.on_ground then
+			self.xv = self.ground_ny * spd
+			self.yv = -self.ground_nx * spd
 		else
 			self.xv = -spd
 		end
 	elseif(self.key_right) then
 		self.flip_x = false
-		if self.rcorner then
-			self.xv = spd * self.rcorner.x
-			self.yv = spd * self.rcorner.y
-		elseif self.lcorner then
-			self.xv = spd * self.lcorner.x
-			self.yv = spd * self.lcorner.y
+		if self.on_ground then
+			self.xv = -self.ground_ny * spd
+			self.yv = self.ground_nx * spd
 		else
 			self.xv = spd
 		end
 	else
-		self.xv = self.xv * 0.6
-		if math.abs(self.xv) < 0.1 then self.xv = 0 end
+		if not self.on_ground then
+			self.xv = 0
+		end
 	end
 
 	if(self.on_ground) then
@@ -192,7 +214,6 @@ function EntityLiving:update(dt)
 			love.audio.play(sound["jump"])
 			self.yv = self.jump_vel
 			self.on_ground = false
-			-- self:clearCollision()
 		end
 	end
 

@@ -38,6 +38,8 @@ function love.load()
 	player.color_g = 0
 	player.color_b = 0
 
+	player:makeCollisionBox()
+
 	if map.spawn_points[1] then
 		player.x = map.spawn_points[1].x
 		player.y = map.spawn_points[1].y
@@ -165,8 +167,12 @@ function love.draw()
 		layer:draw(map.tiles, off_x, off_y)
 	end
 
+	love.graphics.setColor(255, 0, 0)
+
 	map.level:drawCollisions(map.tiles, off_x, off_y)
 	drawCollisions(map.collision_objects, off_x, off_y)
+
+	love.graphics.lastColor()
 
 	for _,v in ipairs(entities) do
 		v:draw(off_x, off_y)
