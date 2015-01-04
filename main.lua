@@ -10,6 +10,7 @@ require("animation")
 require("entity")
 
 entities = Collection:new()
+platforms = Collection:new()
 
 function love.load()
 
@@ -106,6 +107,59 @@ function love.load()
 
 	entities:insert(player)
 
+	platform = Entity:new()
+	platform.x = 32*33
+	platform.y = 32*5
+	platform.spd = 0.5
+	platform.xv = -platform.spd
+	platform.yv = 0
+	platform.width = 64
+	platform.height = 32
+	platform.color_r = 255
+	platform.color_g = 0
+	platform.color_b = 0
+	platform.cobj = CollisionPolygon:new({
+		CollisionSegment:new(-32, -32, 32, -32),
+		CollisionSegment:new(32, -32, 32, 0),
+		CollisionSegment:new(32, 0, -32, 0),
+		CollisionSegment:new(-32, 0, -32, -32)
+	})
+
+	function platform:draw(off_x, off_y)
+		Entity.draw(self, off_x, off_y)
+
+		love.graphics.setColor(255, 0, 0)
+		self.cobj:draw(off_x + self.x, off_y + self.y)
+		love.graphics.lastColor()
+	end
+
+	function platform:update(dt)
+		self.x = self.x + self.xv
+		self.y = self.y + self.yv
+		if self.x < 32*29 then
+			self.x = 32*29
+			self.xv = self.spd
+		end
+		if self.x > 32*33 then
+			self.x = 32*33
+			self.xv = -self.spd
+		end
+	end
+
+	function platform:collide(entity, dx, dy)
+		local toi, cnx, cny, cx, cy = self.cobj:collide(entity.collision_object, entity.x, entity.y, dx - self.xv, dy - self.yv, self.x, self.y)
+
+		if toi then
+			entity.x = entity.x + self.xv
+			entity.y = entity.y + self.yv
+			toi = 0
+		end
+
+		return toi, cnx, cny, cx, cy
+	end
+
+	platforms:insert(platform)
+
 	love.audio.setVolume(0.3)
 
 	sound = {
@@ -162,6 +216,9 @@ function love.update(dt)
 
 	if not frame_by_frame or frame_next then
 		frame_next = false
+	for _,v in ipairs(platforms) do
+		v:update(dt)
+	end
 	for _,v in ipairs(entities) do
 		v:update(dt)
 	end
@@ -203,6 +260,10 @@ function love.draw()
 	love.graphics.lastColor()
 
 	for _,v in ipairs(entities) do
+		v:draw(off_x, off_y)
+	end
+
+	for _,v in ipairs(platforms) do
 		v:draw(off_x, off_y)
 	end
 

@@ -423,12 +423,12 @@
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
-   <tile gid="0"/>
-   <tile gid="0"/>
-   <tile gid="0"/>
-   <tile gid="0"/>
-   <tile gid="0"/>
-   <tile gid="0"/>
+   <tile gid="33"/>
+   <tile gid="33"/>
+   <tile gid="33"/>
+   <tile gid="33"/>
+   <tile gid="33"/>
+   <tile gid="33"/>
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
@@ -1399,6 +1399,6 @@
   </object>
  </objectgroup>
  <objectgroup name="entity">
-  <object name="start" type="spawn" x="224" y="96" width="32" height="32"/>
+  <object name="start" type="spawn" x="1120" y="96" width="32" height="32"/>
  </objectgroup>
 </map>

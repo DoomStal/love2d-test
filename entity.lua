@@ -50,8 +50,8 @@ function Entity:draw(off_x, off_y)
 		love.graphics.setColor(self.color_r, self.color_g, self.color_b, 128)
 		love.graphics.rectangle(
 			"fill",
-			off_x + self.x - self.width/2,
-			off_y + self.y - self.height,
+			math.floor(off_x + self.x - self.width/2 + 0.5),
+			math.floor(off_y + self.y - self.height + 0.5),
 			self.width,
 			self.height
 		)
@@ -59,8 +59,8 @@ function Entity:draw(off_x, off_y)
 	else	
 		if nil ~= self.animation.frames[self.animation_frame] then
 			self.animation.frames[self.animation_frame]:draw(
-				off_x + self.x,
-				off_y + self.y,
+				math.floor(off_x + self.x + 0.5),
+				math.floor(off_y + self.y + 0.5),
 				self.flip_x
 			)
 		end
@@ -96,6 +96,11 @@ function EntityMoving:tryMove(dx, dy)
 	local toi2, cnx2, cny2, cx2, cy2 = collideList(self.collision_object, self.x, self.y,
 	dx, dy, map.collision_objects, 0, 0)
 	if not toi or (toi2 and toi2 < toi) then toi, cnx, cny, cx, cy = toi2, cnx2, cny2, cx2, cy2 end
+
+	for _, platform in ipairs(platforms) do
+		local toi2, cnx2, cny2, cx2, cy2 = platform:collide(self, dx, dy)
+		if not toi or (toi2 and toi2 < toi) then toi, cnx, cny, cx, cy = toi2, cnx2, cny2, cx2, cy2 end
+	end
 
 	if toi then
 		self.x = self.x + toi * dx
