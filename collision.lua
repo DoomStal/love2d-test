@@ -101,7 +101,7 @@ function CollisionPolygon:draw(off_x, off_y)
 end
 
 function CollisionPolygon:collide(poly, ox, oy, dx, dy, sox, soy)
-	if not poly:instanceOf(CollisionPolygon) then error("only CollisionPolygon currently has collide method, sorry(") end
+	if not poly or not poly:instanceOf(CollisionPolygon) then error("only CollisionPolygon currently has collide method, sorry(") end
 
 	local toi, cnx, cny, cx, cy
 

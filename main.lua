@@ -38,7 +38,26 @@ function love.load()
 	player.color_g = 0
 	player.color_b = 0
 
-	player:makeCollisionBox()
+	local pw, ph, ph1 = player.width/2, player.height, player.height - player.width/2
+	player.collision_object_r = CollisionPolygon:new({
+		CollisionSegment:new(-pw, -ph1, 0, -ph),
+		CollisionSegment:new(0, -ph, pw, -ph1),
+		CollisionSegment:new(pw, -ph, pw, 0),
+		CollisionSegment:new(pw, 0, -pw, 0),
+		CollisionSegment:new(-pw, 0, -pw, -ph1),
+		CollisionSegment:new(0, -ph, pw, -ph)
+	})
+
+	player.collision_object_l = CollisionPolygon:new({
+		CollisionSegment:new(-pw, -ph1, 0, -ph),
+		CollisionSegment:new(0, -ph, pw, -ph1),
+		CollisionSegment:new(pw, -ph1, pw, 0),
+		CollisionSegment:new(pw, 0, -pw, 0),
+		CollisionSegment:new(-pw, 0, -pw, -ph),
+		CollisionSegment:new(-pw, -ph, 0, -ph)
+	})
+
+	player.collision_object = player.collision_object_r
 
 	if map.spawn_points[1] then
 		player.x = map.spawn_points[1].x
@@ -75,6 +94,15 @@ function love.load()
 	player.animations["jump"] = a
 
 	player:setAnimation("stand")
+
+	function player:update(dt)
+		EntityLiving.update(self, dt)
+		if player.flip_x then
+			self.collision_object = self.collision_object_l
+		else
+			self.collision_object = self.collision_object_r
+		end
+	end
 
 	entities:insert(player)
 

@@ -46,7 +46,7 @@ function Entity:draw(off_x, off_y)
 	off_x = math.floor(off_x)
 	off_y = math.floor(off_y)
 
---	if not self.animation then
+	if not self.animation then
 		love.graphics.setColor(self.color_r, self.color_g, self.color_b, 128)
 		love.graphics.rectangle(
 			"fill",
@@ -56,7 +56,7 @@ function Entity:draw(off_x, off_y)
 			self.height
 		)
 		love.graphics.lastColor()
---	else	
+	else	
 		if nil ~= self.animation.frames[self.animation_frame] then
 			self.animation.frames[self.animation_frame]:draw(
 				off_x + self.x,
@@ -64,7 +64,7 @@ function Entity:draw(off_x, off_y)
 				self.flip_x
 			)
 		end
---	end
+	end
 
 end
 
