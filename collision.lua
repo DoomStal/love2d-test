@@ -47,7 +47,7 @@ function CollisionSegment:collideDot(x, y, ox, oy, dx, dy, sox, soy)
 
 		if (x1==x2 or (cx > math.min(x1, x2) and cx < math.max(x1, x2)) )
 		and (y1==y2 or (cy > math.min(y1, y2) and cy < math.max(y1, y2)) ) then
-			return toi - eps, self.nx, self.ny, cx, cy
+			return toi, self.nx, self.ny, cx, cy
 		end
 	end
 

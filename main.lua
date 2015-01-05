@@ -112,15 +112,15 @@ function love.load()
 	platform.y = 32*5
 	platform.spd = 0.5
 	platform.xv = -platform.spd
-	platform.yv = 0
+	platform.yv = -platform.spd
 	platform.width = 64
 	platform.height = 32
 	platform.color_r = 255
 	platform.color_g = 0
 	platform.color_b = 0
 	platform.cobj = CollisionPolygon:new({
-		CollisionSegment:new(-32, -32, 32, -32),
-		CollisionSegment:new(32, -32, 32, 0),
+		CollisionSegment:new(-32, -32, 32, -16),
+		CollisionSegment:new(32, -16, 32, 0),
 		CollisionSegment:new(32, 0, -32, 0),
 		CollisionSegment:new(-32, 0, -32, -32)
 	})
@@ -139,21 +139,31 @@ function love.load()
 		if self.x < 32*29 then
 			self.x = 32*29
 			self.xv = self.spd
+			self.yv = self.spd
 		end
 		if self.x > 32*33 then
 			self.x = 32*33
 			self.xv = -self.spd
+			self.yv = -self.spd
 		end
 	end
 
 	function platform:collide(entity, dx, dy)
-		local toi, cnx, cny, cx, cy = self.cobj:collide(entity.collision_object, entity.x, entity.y, dx - self.xv, dy - self.yv, self.x, self.y)
+		local toi, cnx, cny, cx, cy = self.cobj:collide(
+			entity.collision_object,
+			entity.x, entity.y,
+			dx, dy,
+			self.x + self.xv, self.y + self.yv)
 
-		if toi then
-			entity.x = entity.x + self.xv
-			entity.y = entity.y + self.yv
-			toi = 0
-		end
+		return toi, cnx, cny, cx, cy
+	end
+
+	function platform:push(entity)
+		local toi, cnx, cny, cx, cy = self.cobj:collide(
+			entity.collision_object,
+			entity.x, entity.y,
+			-self.xv, -self.yv,
+			self.x, self.y)
 
 		return toi, cnx, cny, cx, cy
 	end
@@ -216,12 +226,12 @@ function love.update(dt)
 
 	if not frame_by_frame or frame_next then
 		frame_next = false
-	for _,v in ipairs(platforms) do
-		v:update(dt)
-	end
-	for _,v in ipairs(entities) do
-		v:update(dt)
-	end
+		for _,v in ipairs(entities) do
+			v:update(dt)
+		end
+		for _,v in ipairs(platforms) do
+			v:update(dt)
+		end
 	end
 
 	camera:setPosition(player.x, player.y - player.height/2)

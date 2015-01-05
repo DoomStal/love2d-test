@@ -91,18 +91,22 @@ function EntityMoving:makeCollisionBox()
 end
 
 function EntityMoving:tryMove(dx, dy)
-	local toi, cnx, cny, cx, cy = map.level:collideEntity(map.tiles, self, dx, dy)
+	local toi, cnx, cny, cx, cy
+	local toi2, cnx2, cny2, cx2, cy2
 
-	local toi2, cnx2, cny2, cx2, cy2 = collideList(self.collision_object, self.x, self.y,
-	dx, dy, map.collision_objects, 0, 0)
-	if not toi or (toi2 and toi2 < toi) then toi, cnx, cny, cx, cy = toi2, cnx2, cny2, cx2, cy2 end
+	toi, cnx, cny, cx, cy = map.level:collideEntity(map.tiles, self, dx, dy)
 
 	for _, platform in ipairs(platforms) do
-		local toi2, cnx2, cny2, cx2, cy2 = platform:collide(self, dx, dy)
+		toi2, cnx2, cny2, cx2, cy2 = platform:collide(self, dx, dy)
 		if not toi or (toi2 and toi2 < toi) then toi, cnx, cny, cx, cy = toi2, cnx2, cny2, cx2, cy2 end
 	end
 
+	toi2, cnx2, cny2, cx2, cy2 = collideList(self.collision_object, self.x, self.y,
+	dx, dy, map.collision_objects, 0, 0)
+	if not toi or (toi2 and toi2 < toi) then toi, cnx, cny, cx, cy = toi2, cnx2, cny2, cx2, cy2 end
+
 	if toi then
+		toi = toi - eps
 		self.x = self.x + toi * dx
 		self.y = self.y + toi * dy
 
@@ -124,6 +128,28 @@ function EntityMoving:tryMove(dx, dy)
 	end
 end
 
+function EntityMoving:pushByPlatforms()
+	local toi, cnx, cny, platform_xv, platform_yv
+
+	for _, platform in ipairs(platforms) do
+		local toi2, cnx2, cny2 = platform:push(self)
+		if not toi or (toi2 and toi2 < toi) then
+			toi, cnx, cny = toi2, cnx2, cny2
+			platform_xv, platform_yv = platform.xv, platform.yv
+		end
+	end
+	if toi then
+		self.xv = self.xv + platform_xv * (1 - toi)
+		self.yv = self.yv + platform_yv * (1 - toi)
+
+		self.ground_nx = cnx
+		self.ground_ny = cny
+		if cny < -0.5 then
+			self.on_ground = true
+		end
+	end
+end
+
 function EntityMoving:update(dt)
 	Entity.update(self, dt)
 
@@ -131,12 +157,14 @@ function EntityMoving:update(dt)
 	self.ground_nx = 0
 	self.ground_ny = -1
 
-	if math.abs(self.xv) > 0.1 or math.abs(self.yv) > 0.1 then
+	self:pushByPlatforms()
+
+--	if math.abs(self.xv) > 0.1 or math.abs(self.yv) > 0.1 then
 		local toi = self:tryMove(self.xv, self.yv)
 		if toi<1 then
 			self:tryMove((1-toi) * self.xv, (1-toi) * self.yv)
 		end
-	end
+--	end
 
 	self.yv = self.yv + 0.3
 
