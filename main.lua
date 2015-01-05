@@ -111,6 +111,9 @@ frame_by_frame = false
 frame_next = false
 
 function love.keypressed(key)
+	if key == "m" then
+		love.audio.setVolume(0)
+	end
 	if key == "r" then
 		player.x = map.spawn_points[1].x
 		player.y = map.spawn_points[1].y

@@ -129,6 +129,30 @@ end
 function Layer:getWidth() return self.tilewidth * self.width end
 function Layer:getHeight() return self.tileheight * self.height end
 
+function parseObject(nobj)
+	local nobjs = nobj[1]
+	if not nobjs then error("bad object") end
+
+	local vertices = nil
+
+	if nobjs.label == "polyline" or nobjs.label == "polygon" then
+		vertices = {}
+		local x = tonumber(nobj.xarg.x)
+		local y = tonumber(nobj.xarg.y)
+		local i = 1
+		while true do
+			local ni, j, vx, vy = string.find(nobjs.xarg.points, "%s*(-?%d+),(-?%d+)%s*", i)
+			if not ni then break end
+			vx = vx + x
+			vy = vy + y
+			table.insert(vertices, {x=vx, y=vy})
+			i = j + 1
+		end
+	end
+
+	return vertices
+end
+
 function loadCollisionObjects(sub, collision_objects, ox, oy)
 	ox = ox or 0
 	oy = oy or 0
@@ -149,29 +173,22 @@ function loadCollisionObjects(sub, collision_objects, ox, oy)
 			local nobjs = nobj[1]
 			if not nobjs then error("bad object") end
 
+			local vertices = parseObject(nobj)
 			if nobjs.label == "polyline" or nobjs.label == "polygon" then
-				local x = tonumber(nobj.xarg.x)
-				local y = tonumber(nobj.xarg.y)
-				local i = 1
-				local vx1, vy1, vxo, vyo
 				local seg_list = {}
-				while true do
-					local ni, j, vx, vy = string.find(nobjs.xarg.points, "%s*(-?%d+),(-?%d+)%s*", i)
-					if not ni then break end
-					vx = vx + x
-					vy = vy + y
+				for i = 1, #vertices do
 					if i>1 then
 						table.insert(seg_list, CollisionSegment:new(
-							vxo, vyo, vx, vy))
-					else
-						vx1, vy1 = vx, vy
+							vertices[i-1].x, vertices[i-1].y,
+							vertices[i].x, vertices[i].y
+						))
 					end
-					vxo, vyo = vx, vy
-					i = j +1
 				end
 				if nobjs.label == "polygon" then
 					table.insert(seg_list, CollisionSegment:new(
-						vxo, vyo, vx1, vy1))
+						vertices[#vertices].x, vertices[#vertices].y,
+						vertices[1].x, vertices[1].y
+					))
 				end
 				table.insert(collision_objects, CollisionPolygon:new(seg_list))
 			end
