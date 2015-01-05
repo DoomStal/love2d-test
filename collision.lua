@@ -113,6 +113,26 @@ function CollisionPolygon:collide(poly, ox, oy, dx, dy, sox, soy)
 	return toi, cnx, cny, cx, cy
 end
 
+function CollisionPolygon:AABB()
+	local minx, maxx, miny, maxy
+	for _, seg in ipairs(self.list) do
+		if not minx then
+			minx, maxx = seg.x1, seg.x1
+			miny, maxy = seg.y1, seg.y1
+		end
+		if seg.x1 < minx then minx = seg.x1 end
+		if seg.x2 < minx then minx = seg.x2 end
+		if seg.y1 < miny then miny = seg.y1 end
+		if seg.y2 < miny then miny = seg.y2 end
+		if seg.x1 > maxx then maxx = seg.x1 end
+		if seg.x2 > maxx then maxx = seg.x2 end
+		if seg.y1 > maxy then maxy = seg.y1 end
+		if seg.y2 > maxy then maxy = seg.y2 end
+	end
+
+	return minx, maxx, miny, maxy
+end
+
 function drawCollisions(list, off_x, off_y)
 	if not list then return end
 

@@ -82,9 +82,16 @@ function Layer:draw(tileset, off_x, off_y)
 	end
 end
 
-function Layer:drawCollisions(tileset, off_x, off_y)
+function Layer:drawCollisions(tileset, off_x, off_y, draw_all)
 	local sw = love.graphics.getWidth()
 	local sh = love.graphics.getHeight()
+
+	if draw_all then
+		player.col_minx = 1
+		player.col_maxx = self.width
+		player.col_miny = 1
+		player.col_maxy = self.height
+	end
 
 	local minx = math.max(player.col_minx, math.floor(-off_x/self.tilewidth))
 	local maxx = math.min(player.col_maxx, math.ceil( (sw-off_x)/self.tilewidth ))
@@ -104,11 +111,14 @@ function Layer:drawCollisions(tileset, off_x, off_y)
 	end
 end
 
-function Layer:collideEntity(tileset, entity, dx, dy)
-	local minx = math.max(1, math.floor( (entity.x-entity.width/2)/self.tilewidth ))
-	local maxx = math.min(self.width, math.ceil( (entity.x+entity.width/2)/self.tilewidth ) + 1)
-	local miny = math.max(1, math.floor( (entity.y-entity.height)/self.tileheight ))
-	local maxy = math.min(self.height, math.ceil( entity.y / self.tileheight ) + 1)
+function Layer:collideEntity(tileset, entity, dx, dy, sox, soy)
+	sox = sox or 0
+	soy = soy or 0
+
+	local minx = math.max(1, math.floor( (entity.x-entity.width/2-sox)/self.tilewidth ))
+	local maxx = math.min(self.width, math.ceil( (entity.x+entity.width/2-sox)/self.tilewidth ) + 1)
+	local miny = math.max(1, math.floor( (entity.y-entity.height-soy)/self.tileheight ))
+	local maxy = math.min(self.height, math.ceil( (entity.y-soy) / self.tileheight ) + 1)
 
 	entity.col_minx = minx
 	entity.col_maxx = maxx
@@ -128,8 +138,8 @@ function Layer:collideEntity(tileset, entity, dx, dy)
 					dx,
 					dy,
 					t.collision_objects,
-					(x-1)*self.tilewidth,
-					(y-1)*self.tileheight
+					(x-1)*self.tilewidth+sox,
+					(y-1)*self.tileheight+soy
 				)
 				if not toi or (toi2 and toi2 < toi) then toi, cnx, cny, cx, cy = toi2, cnx2, cny2, cx2, cy2 end
 			end
@@ -138,6 +148,9 @@ function Layer:collideEntity(tileset, entity, dx, dy)
 
 	return toi, cnx, cny, cx, cy
 end
+
+function Layer:getWidth() return self.tilewidth * self.width end
+function Layer:getHeight() return self.tileheight * self.height end
 
 function loadCollisionObjects(sub, collision_objects, ox, oy)
 	ox = ox or 0
