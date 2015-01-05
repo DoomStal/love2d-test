@@ -101,18 +101,9 @@ function EntityMoving:tryMove(dx, dy)
 	for _, platform in ipairs(platforms) do
 		toi2, cnx2, cny2, cx2, cy2 = platform:collide(self, dx, dy)
 		if toi2 and (not toi or toi2 < toi) then
-			print("move "..toi2)
 			toi, cnx, cny, cx, cy = toi2, cnx2, cny2, cx2, cy2
 			cp = platform
 		end
-	end
-
-	if cp then
---		self.riding_entity = cp
---		self.xv = self.xv + cp.xv
---		self.yv = self.yv + cp.yv
---		dx = dx + cp.xv
---		dy = dy + cp.yv
 	end
 
 	toi2, cnx2, cny2, cx2, cy2 = map.level:collideEntity(map.tiles, self, dx, dy)
@@ -179,9 +170,6 @@ function EntityMoving:pushByPlatforms()
 
 		self:clampVelocity(cnx, cny)
 
-		print( cnx, cny, toi, cp.xv, cp.yv, self.xv, self.yv )
-
-		-- if not self.riding_entity and not self.riding_moved then
 		if ground then
 			self.xv = self.xv + cp.xv * (1 - toi)
 			self.yv = self.yv + cp.yv * (1 - toi)
@@ -189,14 +177,6 @@ function EntityMoving:pushByPlatforms()
 			self.xv = self.xv + cnx * math.abs(cp.xv) * (1 - toi)
 			self.yv = self.yv + cny * math.abs(cp.yv) * (1 - toi)
 		end
-		-- end
-		--if self.on_ground then self.riding_entity = cp end
-
-		print("push "..self.xv, self.yv )
-
-	else
---		self.riding_entity = nil
---		print(toi)
 	end
 end
 
@@ -221,34 +201,19 @@ function EntityMoving:applyFriction(cnx, cny, re)
 
 	self.xv = self.xv + dv * cny
 	self.yv = self.yv - dv * cnx
-
---	if math.abs(xv) < self.friction then xv = 0 end
---	if math.abs(yv) < self.friction then yv = 0 end
-
---		self.xv = self.xv * 0.6
---		self.yv = self.yv * 0.6
---		if math.abs(self.xv) < 0.3 and math.abs(self.yv) < 0.3 then self.xv, self.yv = 0, 0 end
 end
 
 function EntityMoving:update(dt)
 	Entity.update(self, dt)
 
-	print()
-
 	self.riding_moved = false
 
-	-- self.yv = self.yv + 0.3
 	if self.riding_entity then
 		self.xv = self.xv + self.riding_entity.xv
 		self.yv = self.yv + self.riding_entity.yv
 		self.riding_moved = true
-		print("platform "..self.xv, self.yv)
 		self.riding_entity = nil
---	else
---		self.yv = self.yv + 0.3
 	end
-
-	print ("xv,yv ="..self.xv, self.yv)
 
 	self.on_ground = false
 	self.ground_nx = 0
@@ -256,16 +221,10 @@ function EntityMoving:update(dt)
 
 	self:pushByPlatforms()
 
---	if math.abs(self.xv) > 0.1 or math.abs(self.yv) > 0.1 then
-		print("a "..self.xv, self.yv)
 		local toi = self:tryMove(self.xv, self.yv)
 		if toi<1 then
---			self:pushByPlatforms()
-			print("b "..self.xv, self.yv, toi)
-			toi = self:tryMove((1-toi) * self.xv, (1-toi) * self.yv)
-			print("c "..self.xv, self.yv, toi)
+			self:tryMove((1-toi) * self.xv, (1-toi) * self.yv)
 		end
---	end
 
 	if not self.on_ground then
 		self.yv = self.yv + 0.3
@@ -284,7 +243,6 @@ function EntityMoving:update(dt)
 		self.xv = 0
 		self.yv = 0
 	else
---		self.riding_entity = nil
 		self.xv = self.xv * 0.98
 		if math.abs(self.xv) < 0.1 then self.xv = 0 end
 		self.yv = self.yv * 0.98

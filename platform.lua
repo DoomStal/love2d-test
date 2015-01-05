@@ -17,20 +17,12 @@ Platform.color_b = 0
 function Platform:init(obj)
 	if obj:instanceOf(CollisionPolygon) then
 		self.cobj = obj
---		local minx, maxx, miny, maxy = obj:AABB()
---		self.width = maxx - minx
---		self.height = maxy - miny
-	end
-	if obj:instanceOf(Layer) then
+	elseif obj:instanceOf(Layer) then
 		self.layer = obj
---		self.width = obj:getWidth()
---		self.height = obj:getHeight()
 	end
 end
 
 function Platform:draw(off_x, off_y)
---	Entity.draw(self, off_x, off_y)
-
 	if self.cobj then
 		love.graphics.setColor(255, 0, 0)
 		self.cobj:draw(off_x + self.x, off_y + self.y)
