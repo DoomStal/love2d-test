@@ -8,6 +8,8 @@ require("collection")
 
 require("animation")
 require("entity")
+require("player")
+require("platform")
 
 entities = Collection:new()
 platforms = Collection:new()
@@ -30,35 +32,9 @@ function love.load()
 
 	map = Map.load("level.tmx")
 
-	player = EntityLiving:new()
+	player = Player:new()
 	player.x = 10
 	player.y = 10
-	player.width = 40
-	player.height = 56
-	player.color_r = 255
-	player.color_g = 0
-	player.color_b = 0
-
-	local pw, ph, ph1 = player.width/2, player.height, player.height - player.width/2
-	player.collision_object_r = CollisionPolygon:new({
-		CollisionSegment:new(-pw, -ph1, 0, -ph),
-		CollisionSegment:new(0, -ph, pw, -ph1),
-		CollisionSegment:new(pw, -ph, pw, 0),
-		CollisionSegment:new(pw, 0, -pw, 0),
-		CollisionSegment:new(-pw, 0, -pw, -ph1),
-		CollisionSegment:new(0, -ph, pw, -ph)
-	})
-
-	player.collision_object_l = CollisionPolygon:new({
-		CollisionSegment:new(-pw, -ph1, 0, -ph),
-		CollisionSegment:new(0, -ph, pw, -ph1),
-		CollisionSegment:new(pw, -ph1, pw, 0),
-		CollisionSegment:new(pw, 0, -pw, 0),
-		CollisionSegment:new(-pw, 0, -pw, -ph),
-		CollisionSegment:new(-pw, -ph, 0, -ph)
-	})
-
-	player.collision_object = player.collision_object_r
 
 	if map.spawn_points[1] then
 		player.x = map.spawn_points[1].x
@@ -67,57 +43,15 @@ function love.load()
 		print("warning: player spawn point not set!")
 	end
 
-	local a = Animation:new()
-	a.rate = 0
-	a.frames = {
-		Frame:new("stand.png", 48, 83)
-	}
-	player.animations["stand"] = a
-
-	a = Animation:new()
-	a.rate = 15
-	a.loop = true
-	a.frames = {
-		Frame:new("run.png", 48, 81, 0, 0, 96),
-		Frame:new("run.png", 48, 81, 96, 0, 96),
-		Frame:new("run.png", 48, 81, 192, 0, 96),
-		Frame:new("run.png", 48, 81, 288, 0, 96),
-		Frame:new("run.png", 48, 81, 384, 0, 96),
-		Frame:new("run.png", 48, 81, 480, 0, 96),
-	}
-	player.animations["run"] = a
-
-	a = Animation:new()
-	a.rate = 0
-	a.frames = {
-		Frame:new("jump.png", 48, 79)
-	}
-	player.animations["jump"] = a
-
-	player:setAnimation("stand")
-
-	function player:update(dt)
-		EntityLiving.update(self, dt)
-		if player.flip_x then
-			self.collision_object = self.collision_object_l
-		else
-			self.collision_object = self.collision_object_r
-		end
-	end
-
 	entities:insert(player)
 
-	platform = Entity:new()
+	platform = Platform:new()
 	platform.x = 32*33
 	platform.y = 32*5
-	platform.spd = 0.5
 	platform.xv = -platform.spd
 	platform.yv = -platform.spd
 	platform.width = 64
 	platform.height = 32
-	platform.color_r = 255
-	platform.color_g = 0
-	platform.color_b = 0
 	platform.cobj = CollisionPolygon:new({
 		CollisionSegment:new(-32, -32, 32, -16),
 		CollisionSegment:new(32, -16, 32, 0),
@@ -125,49 +59,60 @@ function love.load()
 		CollisionSegment:new(-32, 0, -32, -32)
 	})
 
-	function platform:draw(off_x, off_y)
-		Entity.draw(self, off_x, off_y)
+	platforms:insert(platform)
 
-		love.graphics.setColor(255, 0, 0)
-		self.cobj:draw(off_x + self.x, off_y + self.y)
-		love.graphics.lastColor()
-	end
-
+	platform = Platform:new()
+	platform.x = 32*39
+	platform.y = 32*3
+	platform.xv = platform.spd
+	platform.yv = 0
+	platform.width = 64
+	platform.height = 32
+	platform.cobj = CollisionPolygon:new({
+		CollisionSegment:new(-32, -32, 32, -32),
+		CollisionSegment:new(32, -32, 32, 0),
+		CollisionSegment:new(32, 0, -32, 0),
+		CollisionSegment:new(-32, 0, -32, -32)
+	})
 	function platform:update(dt)
 		self.x = self.x + self.xv
 		self.y = self.y + self.yv
-		if self.x < 32*29 then
-			self.x = 32*29
+		if self.x < 32*39 then
+			self.x = 32*39
 			self.xv = self.spd
+		end
+		if self.x > 32*43 then
+			self.x = 32*43
+			self.xv = -self.spd
+		end
+	end
+	platforms:insert(platform)
+
+	platform = Platform:new()
+	platform.x = 36.5*32
+	platform.y = 32*5
+	platform.xv = 0
+	platform.yv = -platform.spd
+	platform.width = 32
+	platform.height=  32
+	platform.cobj = CollisionPolygon:new({
+		CollisionSegment:new(-16, -32, 16, -32),
+		CollisionSegment:new(16, -32, 16, 0),
+		CollisionSegment:new(16, 0, -16, 0),
+		CollisionSegment:new(-16, 0, -16, -32)
+	})
+	function platform:update(dt)
+		self.x = self.x + self.xv
+		self.y = self.y + self.yv
+		if self.y < 32*3 then
+			self.y = 32*3
 			self.yv = self.spd
 		end
-		if self.x > 32*33 then
-			self.x = 32*33
-			self.xv = -self.spd
+		if self.y > 32*5 then
+			self.y = 32*5
 			self.yv = -self.spd
 		end
 	end
-
-	function platform:collide(entity, dx, dy)
-		local toi, cnx, cny, cx, cy = self.cobj:collide(
-			entity.collision_object,
-			entity.x, entity.y,
-			dx, dy,
-			self.x + self.xv, self.y + self.yv)
-
-		return toi, cnx, cny, cx, cy
-	end
-
-	function platform:push(entity)
-		local toi, cnx, cny, cx, cy = self.cobj:collide(
-			entity.collision_object,
-			entity.x, entity.y,
-			-self.xv, -self.yv,
-			self.x, self.y)
-
-		return toi, cnx, cny, cx, cy
-	end
-
 	platforms:insert(platform)
 
 	love.audio.setVolume(0.3)
@@ -279,7 +224,7 @@ function love.draw()
 
 	love.graphics.print(player.x, 0, 0)
 	love.graphics.print(player.y, 0, font:getHeight())
-
+	if player.on_ground then love.graphics.print("G", 0, font:getHeight()*2) end
 	love.graphics.print(player.xv, 0, font:getHeight()*3)
 	love.graphics.print(player.yv, 0, font:getHeight()*4)
 end

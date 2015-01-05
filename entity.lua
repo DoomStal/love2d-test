@@ -78,8 +78,10 @@ EntityMoving.collision_object = nil
 EntityMoving.on_ground = false
 EntityMoving.ground_nx = 0
 EntityMoving.ground_ny = 0
+EntityMoving.riding_entity = nil
+EntityMoving.riding_moved = false
 
-EntityMoving.friction = 0.5
+EntityMoving.friction = 10
 
 function EntityMoving:makeCollisionBox()
 	self.collision_object = CollisionPolygon:new({
@@ -94,30 +96,56 @@ function EntityMoving:tryMove(dx, dy)
 	local toi, cnx, cny, cx, cy
 	local toi2, cnx2, cny2, cx2, cy2
 
-	toi, cnx, cny, cx, cy = map.level:collideEntity(map.tiles, self, dx, dy)
+	local cp
 
 	for _, platform in ipairs(platforms) do
 		toi2, cnx2, cny2, cx2, cy2 = platform:collide(self, dx, dy)
-		if not toi or (toi2 and toi2 < toi) then toi, cnx, cny, cx, cy = toi2, cnx2, cny2, cx2, cy2 end
+		if toi2 and (not toi or toi2 < toi) then
+			print("move "..toi2)
+			toi, cnx, cny, cx, cy = toi2, cnx2, cny2, cx2, cy2
+			cp = platform
+		end
+	end
+
+	if cp then
+--		self.riding_entity = cp
+--		self.xv = self.xv + cp.xv
+--		self.yv = self.yv + cp.yv
+--		dx = dx + cp.xv
+--		dy = dy + cp.yv
+	end
+
+	toi2, cnx2, cny2, cx2, cy2 = map.level:collideEntity(map.tiles, self, dx, dy)
+	if not toi or (toi2 and toi2 < toi) then
+		toi, cnx, cny, cx, cy = toi2, cnx2, cny2, cx2, cy2
+		cp = nil
 	end
 
 	toi2, cnx2, cny2, cx2, cy2 = collideList(self.collision_object, self.x, self.y,
 	dx, dy, map.collision_objects, 0, 0)
-	if not toi or (toi2 and toi2 < toi) then toi, cnx, cny, cx, cy = toi2, cnx2, cny2, cx2, cy2 end
+	if not toi or (toi2 and toi2 < toi) then
+		toi, cnx, cny, cx, cy = toi2, cnx2, cny2, cx2, cy2
+		cp = nil
+	end
 
 	if toi then
+		if toi < 0 then toi = 0 end
+
 		toi = toi - eps
 		self.x = self.x + toi * dx
 		self.y = self.y + toi * dy
 
-		local dv = self.xv * cnx + self.yv * cny
-		self.xv = self.xv - cnx * dv
-		self.yv = self.yv - cny * dv
+		self:clampVelocity(cnx, cny)
 
-		self.ground_nx = cnx
-		self.ground_ny = cny
+		if math.abs(cy - self.y) < 1 and not self.on_ground then
+			self.ground_nx = cnx
+			self.ground_ny = cny
+		end
 		if cny < -0.5 then
 			self.on_ground = true
+			if cp then
+				self.riding_entity = cp
+			end
 		end
 
 		return toi
@@ -129,29 +157,98 @@ function EntityMoving:tryMove(dx, dy)
 end
 
 function EntityMoving:pushByPlatforms()
-	local toi, cnx, cny, platform_xv, platform_yv
+	local toi, cnx, cny, cx, cy, cp
 
 	for _, platform in ipairs(platforms) do
-		local toi2, cnx2, cny2 = platform:push(self)
+		local toi2, cnx2, cny2, cx2, cy2 = platform:push(self)
 		if not toi or (toi2 and toi2 < toi) then
-			toi, cnx, cny = toi2, cnx2, cny2
-			platform_xv, platform_yv = platform.xv, platform.yv
+			toi, cnx, cny, cx, cy = toi2, cnx2, cny2, cx2, cy2
+			cp = platform
 		end
 	end
 	if toi then
-		self.xv = self.xv + platform_xv * (1 - toi)
-		self.yv = self.yv + platform_yv * (1 - toi)
-
-		self.ground_nx = cnx
-		self.ground_ny = cny
+		if math.abs(cy - self.y) < 1 and not self.on_ground then
+			self.ground_nx = cnx
+			self.ground_ny = cny
+		end
+		local ground = false
 		if cny < -0.5 then
+			ground = true
 			self.on_ground = true
 		end
+
+		self:clampVelocity(cnx, cny)
+
+		print( cnx, cny, toi, cp.xv, cp.yv, self.xv, self.yv )
+
+		-- if not self.riding_entity and not self.riding_moved then
+		if ground then
+			self.xv = self.xv + cp.xv * (1 - toi)
+			self.yv = self.yv + cp.yv * (1 - toi)
+		else
+			self.xv = self.xv + cnx * math.abs(cp.xv) * (1 - toi)
+			self.yv = self.yv + cny * math.abs(cp.yv) * (1 - toi)
+		end
+		-- end
+		--if self.on_ground then self.riding_entity = cp end
+
+		print("push "..self.xv, self.yv )
+
+	else
+--		self.riding_entity = nil
+--		print(toi)
 	end
+end
+
+function EntityMoving:clampVelocity(cnx, cny)
+	local dv = self.xv * cnx + self.yv * cny
+	if dv < -eps then
+		self.xv = self.xv - cnx * dv
+		self.yv = self.yv - cny * dv
+	end
+end
+
+function EntityMoving:applyFriction(cnx, cny, re)
+	local rxv, ryv = 0, 0
+	if re then rxv, ryv = re.xv, re.yv end
+
+	local xv = self.xv - rxv
+	local yv = self.yv - ryv
+
+	local dv = -cny * xv + cnx * yv
+	if dv > self.friction then dv = self.friction
+	elseif dv < -self.friction then dv = -self.friction end
+
+	self.xv = self.xv + dv * cny
+	self.yv = self.yv - dv * cnx
+
+--	if math.abs(xv) < self.friction then xv = 0 end
+--	if math.abs(yv) < self.friction then yv = 0 end
+
+--		self.xv = self.xv * 0.6
+--		self.yv = self.yv * 0.6
+--		if math.abs(self.xv) < 0.3 and math.abs(self.yv) < 0.3 then self.xv, self.yv = 0, 0 end
 end
 
 function EntityMoving:update(dt)
 	Entity.update(self, dt)
+
+	print()
+
+	self.riding_moved = false
+
+	-- self.yv = self.yv + 0.3
+	if self.riding_entity then
+		self.xv = self.xv + self.riding_entity.xv
+		self.yv = self.yv + self.riding_entity.yv
+		self.riding_moved = true
+		print("platform "..self.xv, self.yv)
+		self.riding_entity = nil
+--	else
+--		self.yv = self.yv + 0.3
+	end
+
+	print ("xv,yv ="..self.xv, self.yv)
 
 	self.on_ground = false
 	self.ground_nx = 0
@@ -160,15 +257,18 @@ function EntityMoving:update(dt)
 	self:pushByPlatforms()
 
 --	if math.abs(self.xv) > 0.1 or math.abs(self.yv) > 0.1 then
+		print("a "..self.xv, self.yv)
 		local toi = self:tryMove(self.xv, self.yv)
 		if toi<1 then
-			self:tryMove((1-toi) * self.xv, (1-toi) * self.yv)
+--			self:pushByPlatforms()
+			print("b "..self.xv, self.yv, toi)
+			toi = self:tryMove((1-toi) * self.xv, (1-toi) * self.yv)
+			print("c "..self.xv, self.yv, toi)
 		end
 --	end
 
-	self.yv = self.yv + 0.3
-
 	if not self.on_ground then
+		self.yv = self.yv + 0.3
 		self:tryMove(0, 0.1)
 	end
 
@@ -184,6 +284,7 @@ function EntityMoving:update(dt)
 		self.xv = 0
 		self.yv = 0
 	else
+--		self.riding_entity = nil
 		self.xv = self.xv * 0.98
 		if math.abs(self.xv) < 0.1 then self.xv = 0 end
 		self.yv = self.yv * 0.98
@@ -218,7 +319,10 @@ function EntityLiving:update(dt)
 
 	local spd = self.move_spd
 
-	if self.ground_ny > -0.5 then spd = spd / 2 end
+	if self.ground_ny > -0.5 then
+		spd = spd / 2
+		self.on_ground = false
+	end
 
 	if(self.key_left) then
 		self.flip_x = true

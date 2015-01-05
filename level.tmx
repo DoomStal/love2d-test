@@ -115,6 +115,9 @@
     <object x="0" y="0">
      <polyline points="0,0 32,0"/>
     </object>
+    <object x="0" y="0">
+     <polyline points="0,0 32,0"/>
+    </object>
    </objectgroup>
   </tile>
  </tileset>
@@ -155,7 +158,6 @@
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
-   <tile gid="21"/>
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
@@ -213,11 +215,11 @@
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
-   <tile gid="5"/>
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
+   <tile gid="33"/>
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
@@ -268,7 +270,8 @@
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
-   <tile gid="21"/>
+   <tile gid="33"/>
+   <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
@@ -323,12 +326,12 @@
    <tile gid="5"/>
    <tile gid="0"/>
    <tile gid="0"/>
-   <tile gid="0"/>
-   <tile gid="0"/>
-   <tile gid="0"/>
-   <tile gid="0"/>
-   <tile gid="0"/>
-   <tile gid="0"/>
+   <tile gid="33"/>
+   <tile gid="33"/>
+   <tile gid="33"/>
+   <tile gid="33"/>
+   <tile gid="33"/>
+   <tile gid="33"/>
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
@@ -365,8 +368,8 @@
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
-   <tile gid="0"/>
-   <tile gid="0"/>
+   <tile gid="97"/>
+   <tile gid="97"/>
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
@@ -420,8 +423,8 @@
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
-   <tile gid="0"/>
-   <tile gid="0"/>
+   <tile gid="113"/>
+   <tile gid="113"/>
    <tile gid="0"/>
    <tile gid="33"/>
    <tile gid="33"/>
@@ -1400,5 +1403,16 @@
  </objectgroup>
  <objectgroup name="entity">
   <object name="start" type="spawn" x="1120" y="96" width="32" height="32"/>
+ </objectgroup>
+ <objectgroup name="platform">
+  <object x="800" y="128" width="64" height="64">
+   <properties>
+    <property name="loop" value="loop"/>
+    <property name="speed" value="1"/>
+   </properties>
+  </object>
+  <object x="832" y="160">
+   <polyline points="0,0 0,-96"/>
+  </object>
  </objectgroup>
 </map>
