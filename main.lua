@@ -50,12 +50,12 @@ function love.load()
 		CollisionSegment:new(32, -16, 32, 0),
 		CollisionSegment:new(32, 0, -32, 0),
 		CollisionSegment:new(-32, 0, -32, -32)
-	}))
+	}),{
+		{x=32*33, y=32*5},
+		{x=32*29, y=32*1}
+	})
 	platform.x = 32*33
 	platform.y = 32*5
-	platform.xv = -platform.spd
-	platform.yv = -platform.spd
-
 	platforms:insert(platform)
 
 	platform = Platform:new(CollisionPolygon:new({
@@ -63,23 +63,12 @@ function love.load()
 		CollisionSegment:new(32, -32, 32, 0),
 		CollisionSegment:new(32, 0, -32, 0),
 		CollisionSegment:new(-32, 0, -32, -32)
-	}))
+	}), {
+		{x=32*39, y=32*3},
+		{x=32*43, y=32*3}
+	})
 	platform.x = 32*39
 	platform.y = 32*3
-	platform.xv = platform.spd
-	platform.yv = 0
-	function platform:update(dt)
-		self.x = self.x + self.xv
-		self.y = self.y + self.yv
-		if self.x <= 32*39 then
-			self.x = 32*39
-			self.xv = self.spd
-		end
-		if self.x >= 32*43 then
-			self.x = 32*43
-			self.xv = -self.spd
-		end
-	end
 	platforms:insert(platform)
 
 	platform = Platform:new(CollisionPolygon:new({
@@ -87,42 +76,21 @@ function love.load()
 		CollisionSegment:new(16, -32, 16, 0),
 		CollisionSegment:new(16, 0, -16, 0),
 		CollisionSegment:new(-16, 0, -16, -32)
-	}))
+	}),{
+		{x=36.5*32, y=32*5},
+		{x=36.5*32, y=32*3}
+	})
 	platform.x = 36.5*32
 	platform.y = 32*5
-	platform.xv = 0
-	platform.yv = -platform.spd
-	function platform:update(dt)
-		self.x = self.x + self.xv
-		self.y = self.y + self.yv
-		if self.y <= 32*3 then
-			self.y = 32*3
-			self.yv = self.spd
-		end
-		if self.y >= 32*5 then
-			self.y = 32*5
-			self.yv = -self.spd
-		end
-	end
 	platforms:insert(platform)
 
-	platform = Platform:new(Layer:new(32, 32, 2, 2))
+	platform = Platform:new(Layer:new(32, 32, 2, 2),{
+		{x=32*25, y=32*4},
+		{x=32*25, y=32*1}
+	})
 	platform.layer.tiles = { {97, 97}, {113, 113} }
 	platform.x = 32 * 25
 	platform.y = 32 * 4
-	platform.yv = -platform.spd
-	function platform:update(dt)
-		self.x = self.x + self.xv
-		self.y = self.y + self.yv
-		if self.y <= 32*1 then
-			self.y = 32*1
-			self.yv = self.spd
-		end
-		if self.y >= 32*4 then
-			self.y = 32*4
-			self.yv = -self.spd
-		end
-	end
 	platforms:insert(platform)
 
 	love.audio.setVolume(0.3)

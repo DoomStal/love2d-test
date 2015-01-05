@@ -61,17 +61,17 @@ function Layer:drawCollisions(tileset, off_x, off_y, draw_all)
 	local sw = love.graphics.getWidth()
 	local sh = love.graphics.getHeight()
 
-	if draw_all then
-		player.col_minx = 1
-		player.col_maxx = self.width
-		player.col_miny = 1
-		player.col_maxy = self.height
-	end
-
 	local minx = math.max(player.col_minx, math.floor(-off_x/self.tilewidth))
 	local maxx = math.min(player.col_maxx, math.ceil( (sw-off_x)/self.tilewidth ))
 	local miny = math.max(player.col_miny, math.floor(-off_y/self.tileheight))
 	local maxy = math.min(player.col_maxy, math.ceil( (sh-off_y)/self.tileheight ))
+
+	if draw_all then
+		minx = 1
+		maxx = self.width
+		miny = 1
+		maxy = self.height
+	end
 
 	for y = miny, maxy do
 		for x = minx, maxx do
@@ -95,10 +95,12 @@ function Layer:collideEntity(tileset, entity, dx, dy, sox, soy)
 	local miny = math.max(1, math.floor( (entity.y-entity.height-soy)/self.tileheight ))
 	local maxy = math.min(self.height, math.ceil( (entity.y-soy) / self.tileheight ) + 1)
 
-	entity.col_minx = minx
-	entity.col_maxx = maxx
-	entity.col_miny = miny
-	entity.col_maxy = maxy
+	if self == map.level then
+		entity.col_minx = minx
+		entity.col_maxx = maxx
+		entity.col_miny = miny
+		entity.col_maxy = maxy
+	end
 
 	local toi, cnx, cny, cx, cy
 

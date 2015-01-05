@@ -4,27 +4,36 @@ require("tiled")
 
 Platform = inherits(Entity)
 
-Platform.spd = 0.5
+Platform.speed = 0.5
 Platform.xv = 0
 Platform.yv = 0
 Platform.cobj = nil
 Platform.layer = nil
 
+Platform.stop = false
+Platform.loop = false
+Platform.waypoints = {}
+Platform.waypoint_next = nil
+Platform.waypoint_next_ex = 0
+Platform.waypoint_next_ey = 0
+Platform.waypoint_forward = true
+
 Platform.color_r = 255
 Platform.color_g = 0
 Platform.color_b = 0
 
-function Platform:init(obj)
+function Platform:init(obj, waypoints)
 	if obj:instanceOf(CollisionPolygon) then
 		self.cobj = obj
 	elseif obj:instanceOf(Layer) then
 		self.layer = obj
 	end
+	if waypoints then self.waypoints = waypoints end
 end
 
 function Platform:draw(off_x, off_y)
 	if self.cobj then
-		love.graphics.setColor(255, 0, 0)
+		love.graphics.setColor(255, 0, 255)
 		self.cobj:draw(off_x + self.x, off_y + self.y)
 		love.graphics.lastColor()
 	elseif self.layer then
@@ -37,18 +46,74 @@ function Platform:draw(off_x, off_y)
 	love.graphics.print(self.y, off_x + self.x, off_y + self.y)
 end
 
+function Platform:nextWaypoint()
+	local next_wp
+	if not self.waypoint_next then
+		if math.abs(self.x - self.waypoints[1].x) + math.abs(self.y - self.waypoints[1].y) < 1 then
+			if #self.waypoints == 1 then
+				self.stop = true
+				return
+			end
+			next_wp = 2
+		else
+			next_wp = 1
+		end
+	else
+		if #self.waypoints == 1 then
+			self.stop = true
+			return
+		end
+		if self.waypoint_forward then
+			next_wp = self.waypoint_next + 1
+			if next_wp > #self.waypoints then
+				if self.loop then
+					next_wp = 1
+				else
+					next_wp = #self.waypoints - 1
+					self.waypoint_forward = false
+				end
+			end
+		else
+			next_wp = self.waypoint_next - 1
+			if next_wp < 1 then
+				if self.loop then
+					next_wp = #self.waypoints
+				else
+					next_wp = 2
+					self.waypoint_forward = true
+				end
+			end
+		end
+	end
+
+	self.waypoint_next = next_wp
+	local ex = self.waypoints[next_wp].x - self.x
+	local ey = self.waypoints[next_wp].y - self.y
+	local r = math.sqrt(ex*ex + ey*ey)
+	if r > 0.1 then
+		ex = ex / r
+		ey = ey / r
+	end
+
+	self.waypoint_next_ex = ex
+	self.waypoint_next_ey = ey
+	self.xv = ex * self.speed
+	self.yv = ey * self.speed
+
+end
+
 function Platform:update(dt)
+	if #self.waypoints < 1 then return end
+	if self.stop then return end
+
+	if not self.waypoint_next then self:nextWaypoint() end
 	self.x = self.x + self.xv
 	self.y = self.y + self.yv
-	if self.x <= 32*29 then
-		self.x = 32*29
-		self.xv = self.spd
-		self.yv = self.spd
-	end
-	if self.x >= 32*33 then
-		self.x = 32*33
-		self.xv = -self.spd
-		self.yv = -self.spd
+
+	if (self.x - self.waypoints[self.waypoint_next].x)*self.waypoint_next_ex +
+		(self.y - self.waypoints[self.waypoint_next].y)*self.waypoint_next_ey > 0 then
+
+		self:nextWaypoint()
 	end
 end
 
