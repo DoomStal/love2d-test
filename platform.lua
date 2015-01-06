@@ -1,17 +1,18 @@
 require("oop")
 require("entity")
-require("tiled")
+--require("tiled")
 
 Platform = inherits(Entity)
 
 Platform.speed = 0.5
 Platform.xv = 0
 Platform.yv = 0
+Platform.dxv = 0
+Platform.dyv = 0
 Platform.cobj = nil
 Platform.layer = nil
 
 Platform.stop = false
-Platform.loop = false
 Platform.waypoints = {}
 Platform.waypoint_next = nil
 Platform.waypoint_next_ex = 0
@@ -27,6 +28,8 @@ function Platform:init(obj, waypoints)
 		self.cobj = obj
 	elseif obj:instanceOf(Layer) then
 		self.layer = obj
+		self.width = obj:getWidth()
+		self.height = obj:getHeight()
 	end
 	if waypoints then self.waypoints = waypoints end
 end
@@ -66,7 +69,7 @@ function Platform:nextWaypoint()
 		if self.waypoint_forward then
 			next_wp = self.waypoint_next + 1
 			if next_wp > #self.waypoints then
-				if self.loop then
+				if self.waypoints.loop then
 					next_wp = 1
 				else
 					next_wp = #self.waypoints - 1
@@ -76,7 +79,7 @@ function Platform:nextWaypoint()
 		else
 			next_wp = self.waypoint_next - 1
 			if next_wp < 1 then
-				if self.loop then
+				if self.waypoints.loop then
 					next_wp = #self.waypoints
 				else
 					next_wp = 2
@@ -86,19 +89,25 @@ function Platform:nextWaypoint()
 		end
 	end
 
-	self.waypoint_next = next_wp
-	local ex = self.waypoints[next_wp].x - self.x
-	local ey = self.waypoints[next_wp].y - self.y
+	local ex, ey
+	if self.waypoint_next then
+		ex = self.waypoints[next_wp].x - self.waypoints[self.waypoint_next].x
+		ey = self.waypoints[next_wp].y - self.waypoints[self.waypoint_next].y
+	else
+		ex = self.waypoints[next_wp].x - self.x
+		ey = self.waypoints[next_wp].y - self.y
+	end
 	local r = math.sqrt(ex*ex + ey*ey)
 	if r > 0.1 then
 		ex = ex / r
 		ey = ey / r
 	end
 
+	self.waypoint_next = next_wp
 	self.waypoint_next_ex = ex
 	self.waypoint_next_ey = ey
-	self.xv = ex * self.speed
-	self.yv = ey * self.speed
+	self.xv = ex * self.speed + self.dxv
+	self.yv = ey * self.speed + self.dyv
 
 end
 
@@ -110,8 +119,17 @@ function Platform:update(dt)
 	self.x = self.x + self.xv
 	self.y = self.y + self.yv
 
+	if self.dxv ~= 0 or self.dyv ~= 0 then
+		self.xv = self.xv - self.dxv
+		self.yv = self.yv - self.dyv
+		self.dxv, self.dyv = 0, 0
+	end
+
 	if (self.x - self.waypoints[self.waypoint_next].x)*self.waypoint_next_ex +
 		(self.y - self.waypoints[self.waypoint_next].y)*self.waypoint_next_ey > 0 then
+
+		self.dxv = self.waypoints[self.waypoint_next].x - self.x
+		self.dyv = self.waypoints[self.waypoint_next].y - self.y
 
 		self:nextWaypoint()
 	end

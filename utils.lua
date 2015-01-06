@@ -1,6 +1,6 @@
 function print_rek(t, max_depth, depth)
 	depth = depth or 0
-	if depth > max_depth then return end
+	if max_depth and depth > max_depth then return end
 
 	if(type(t) ~= "table") then
 		print('('..type(t)..") '"..t..'\'')

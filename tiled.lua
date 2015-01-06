@@ -2,6 +2,7 @@ require("oop")
 require("image_man")
 require("loadxml")
 require("collision")
+require("platform")
 require("utils")
 
 Tile = inherits(nil)
@@ -215,6 +216,17 @@ Map.collision_objects = {}
 function Map:getWidth() return self.tilewidth * self.width end
 function Map:getHeight() return self.tileheight * self.height end
 
+function adjustWaypoints(vertices, pl)
+--	local ox = vertices[1].x - pl.x
+--	local oy = vertices[1].y - pl.y
+	local ox = pl.width / 2
+	local oy = pl.height / 2
+	for k2,v in ipairs(vertices) do
+		vertices[k2].x = v.x - ox
+		vertices[k2].y = v.y - oy
+	end
+end
+
 function Map.load(file)
 	local xml = LoadXML(love.filesystem.read(file))
 
@@ -274,10 +286,10 @@ function Map.load(file)
 
 			local ndata = sub[1]
 			for j=1, lh do
+				layer.tiles[j] = {}
 				for i=1, lw do
 					local ntile = ndata[(j-1)*lw + i]
 					if not ntile then error("broken tmx") end
-					if not layer.tiles[j] then layer.tiles[j] = {} end
 					layer.tiles[j][i] = tonumber(ntile.xarg.gid)
 				end
 			end
@@ -295,6 +307,89 @@ function Map.load(file)
 		if sub.label == "objectgroup" then
 			if sub.xarg.name == "collision" then
 				loadCollisionObjects(sub, map.collision_objects)
+			elseif sub.xarg.name == "platform" then
+				local pls = {}
+				local wps = {}
+				for _, nobj in ipairs(sub) do
+					if nobj.label ~= "object" then error("bad object") end
+					if nobj.xarg.width and nobj.xarg.height then
+						-- platform
+						local x = math.max(0, math.min(map:getWidth(), tonumber(nobj.xarg.x)))
+						local y = math.max(0, math.min(map:getHeight(), tonumber(nobj.xarg.y)))
+
+						local w = math.ceil(tonumber(nobj.xarg.width) / map.level.tilewidth)
+						local h = math.ceil(tonumber(nobj.xarg.height) / map.level.tileheight)
+
+						local tx = math.ceil(x / map.level.tilewidth)
+						local ty = math.ceil(y / map.level.tileheight)
+
+						if tx + w > map.level.width then w = map.level.width - tx end
+						if ty + h > map.level.height then h = map.level.height - ty end
+
+						local til = {}
+						for j = 1, w do
+							til[j] = {}
+							for i = 1, h do
+								til[j][i] = map.level.tiles[ty + j][tx + i]
+								map.level.tiles[ty + j][tx + i] = 0
+							end
+						end
+
+						local lay = Layer:new(
+							map.level.tilewidth, map.level.tileheight,
+							w, h
+						)
+						lay.tiles = til
+						local pl = Platform:new(lay, way)
+						pl.x = x
+						pl.y = y
+						platforms:insert(pl)
+
+						pls[#platforms] = pl
+						if nobj.xarg.name then
+							pls["n_"..nobj.xarg.name] = pl
+							if wps["n_"..nobj.xarg.name] then
+								pl.waypoints = wps["n_"..nobj.xarg.name]
+								adjustWaypoints(wps["n_"..nobj.xarg.name], pl)
+							end
+						else
+							for k,vertices in pairs(wps) do
+								if vertices[1].x >= pl.x and vertices[1].x <= pl.x + pl.width
+								and vertices[1].y >= pl.y and vertices[1].y <= pl.y + pl.height then
+									adjustWaypoints(vertices, pl)
+									pl.waypoints = vertices
+									break
+								end
+							end
+						end
+					else
+						-- waypoints
+						local nobjs = nobj[1]
+						if not nobjs then error("bad object") end
+
+						local vertices = parseObject(nobj)
+						if nobjs.label == "polyline" or nobjs.label == "polygon" then
+							if nobjs.label == "polygon" then vertices.loop = true end
+							table.insert(wps, vertices)
+							if nobj.xarg.name then
+								wps["n_"..nobj.xarg.name] = vertices
+								if pls["n_"..nobj.xarg.name] then
+									pls["n_"..nobj.xarg.name].waypoints = vertices
+									adjustWaypoints(vertices, pls["n_"..nobj.xarg.name])
+								end
+							else
+								for k,pl in pairs(pls) do
+									if vertices[1].x >= pl.x and vertices[1].x <= pl.x + pl.width
+									and vertices[1].y >= pl.y and vertices[1].y <= pl.y + pl.height then
+										adjustWaypoints(vertices, pl)
+										pl.waypoints = vertices
+										break
+									end
+								end
+							end
+						end
+					end
+				end
 			else
 				for _, nobj in ipairs(sub) do
 					if nobj.xarg.type == "spawn" then

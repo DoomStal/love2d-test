@@ -45,54 +45,6 @@ function love.load()
 
 	entities:insert(player)
 
-	platform = Platform:new(CollisionPolygon:new({
-		CollisionSegment:new(-32, -32, 32, -16),
-		CollisionSegment:new(32, -16, 32, 0),
-		CollisionSegment:new(32, 0, -32, 0),
-		CollisionSegment:new(-32, 0, -32, -32)
-	}),{
-		{x=32*33, y=32*5},
-		{x=32*29, y=32*1}
-	})
-	platform.x = 32*33
-	platform.y = 32*5
-	platforms:insert(platform)
-
-	platform = Platform:new(CollisionPolygon:new({
-		CollisionSegment:new(-32, -32, 32, -32),
-		CollisionSegment:new(32, -32, 32, 0),
-		CollisionSegment:new(32, 0, -32, 0),
-		CollisionSegment:new(-32, 0, -32, -32)
-	}), {
-		{x=32*39, y=32*3},
-		{x=32*43, y=32*3}
-	})
-	platform.x = 32*39
-	platform.y = 32*3
-	platforms:insert(platform)
-
-	platform = Platform:new(CollisionPolygon:new({
-		CollisionSegment:new(-16, -32, 16, -32),
-		CollisionSegment:new(16, -32, 16, 0),
-		CollisionSegment:new(16, 0, -16, 0),
-		CollisionSegment:new(-16, 0, -16, -32)
-	}),{
-		{x=36.5*32, y=32*5},
-		{x=36.5*32, y=32*3}
-	})
-	platform.x = 36.5*32
-	platform.y = 32*5
-	platforms:insert(platform)
-
-	platform = Platform:new(Layer:new(32, 32, 2, 2),{
-		{x=32*25, y=32*4},
-		{x=32*25, y=32*1}
-	})
-	platform.layer.tiles = { {97, 97}, {113, 113} }
-	platform.x = 32 * 25
-	platform.y = 32 * 4
-	platforms:insert(platform)
-
 	love.audio.setVolume(0.3)
 
 	sound = {
