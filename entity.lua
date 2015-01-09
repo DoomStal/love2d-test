@@ -219,11 +219,14 @@ function EntityMoving:update(dt)
 	self.ground_nx = 0
 	self.ground_ny = -1
 
+	print()
+	print("xv,yv", self.xv, self.yv)
+
 	self:pushByPlatforms()
 
 		local toi = self:tryMove(self.xv, self.yv)
 		if toi<1 then
-			self:tryMove((1-toi) * self.xv, (1-toi) * self.yv)
+--			self:tryMove((1-toi) * self.xv, (1-toi) * self.yv)
 		end
 
 	if not self.on_ground then

@@ -99,6 +99,7 @@ function love.update(dt)
 	local speed = 200
 
 	player.key_jump = love.keyboard.isDown("up")
+	player.key_down = love.keyboard.isDown("down")
 	player.key_left = love.keyboard.isDown("left")
 	player.key_right = love.keyboard.isDown("right")
 

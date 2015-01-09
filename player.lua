@@ -63,7 +63,7 @@ Player.animations["jump"] = a
 Player:setAnimation("stand")
 
 function Player:update(dt)
-	EntityLiving.update(self, dt)
+	Player.super().update(self, dt)
 	if self.flip_x then
 		self.collision_object = self.collision_object_l
 	else
