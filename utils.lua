@@ -12,6 +12,8 @@ function print_rek(t, max_depth, depth)
 		if type(v) ~= "table" then
 			if nil == v then
 				print(' '..ident..k.." = nil'")
+			elseif type(v) == "userdata" then
+				print(' '..ident..k.." = ("..type(v)..")")
 			else
 				print(' '..ident..k.." = ("..type(v)..") '"..v..'\'')
 			end

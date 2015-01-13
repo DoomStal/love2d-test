@@ -4,7 +4,11 @@ ImageManager.images = {}
 
 function ImageManager:load(name)
 	if nil == self.images[name] then
-		self.images[name] = love.graphics.newImage(name)
+		if love.filesystem.exists(name) then
+			self.images[name] = love.graphics.newImage(name)
+		else
+			self.images[name] = love.graphics.newImage("stub.png")
+		end
 	end
 end
 

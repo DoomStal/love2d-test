@@ -1,5 +1,3 @@
-require("oop")
-
 Collection = inherits(nil)
 
 function Collection:insert(value)

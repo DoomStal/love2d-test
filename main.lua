@@ -1,20 +1,24 @@
 -- http://www.love2d.org/wiki/Minimalist_Sound_Manager
 
-require("camera")
-require("tiled")
+require("oop")
+require("collection")
 require("image_man")
 
-require("collection")
-
 require("animation")
+require("collision")
 require("entity")
 require("player")
+
+require("world")
 require("platform")
+require("camera")
 
 entities = Collection:new()
 platforms = Collection:new()
 
 function love.load()
+
+	ImageManager:load("not_exist.png")
 
 	love.graphics.setDefaultFilter("nearest", "nearest")
 	love.graphics.setBackgroundColor(255, 255, 255)
@@ -30,15 +34,15 @@ function love.load()
 	background_quad = love.graphics.newQuad(0, 0, love.graphics.getWidth(),
 		love.graphics.getHeight(), background:getDimensions())
 
-	map = Map.load("level.tmx")
+	world:load("level.tmx")
 
 	player = Player:new()
 	player.x = 10
 	player.y = 10
 
-	if map.spawn_points[1] then
-		player.x = map.spawn_points[1].x
-		player.y = map.spawn_points[1].y
+	if world.spawn_points[1] then
+		player.x = world.spawn_points[1].x
+		player.y = world.spawn_points[1].y
 	else
 		print("warning: player spawn point not set!")
 	end
@@ -103,6 +107,7 @@ function love.update(dt)
 	player.key_left = love.keyboard.isDown("left")
 	player.key_right = love.keyboard.isDown("right")
 
+--[[
 	if not frame_by_frame or frame_next then
 		frame_next = false
 		for _,v in ipairs(entities) do
@@ -112,14 +117,17 @@ function love.update(dt)
 			v:update(dt)
 		end
 	end
+]]
 
 	camera:setPosition(player.x, player.y - player.height/2)
 
 	local sw2 = love.graphics.getWidth()/2
 	local sh2 = love.graphics.getHeight()/2
 	local min_x = sw2
-	local max_x = map:getWidth() - sw2
-	local max_y = map:getHeight() - sh2
+	local max_x = world:getWidth() - sw2
+	if max_x < min_x then max_x, min_x = min_x, max_x end
+	if max_x - min_x < love.graphics.getWidth() then min_x = world:getWidth()/2 end
+	local max_y = world:getHeight() - sh2
 	camera:setPosition(
 		math.min(math.max(min_x, camera.x), max_x),
 		math.min(camera.y, max_y)
@@ -133,10 +141,12 @@ function love.draw()
 	local off_x = love.graphics.getWidth()/2 - camera.x
 	local off_y = love.graphics.getHeight()/2 - camera.y
 
-	for _,layer in ipairs(map.bg_layers) do
-		layer:draw(map.tiles, off_x, off_y)
+	love.graphics.rectangle("line", off_x, off_y, world:getWidth(), world:getHeight())
+
+	for _,layer in ipairs(world.bg_layers) do
+		layer:draw(off_x, off_y)
 	end
-	map.level:draw(map.tiles, off_x, off_y)
+	if world.level then world.level:draw(off_x, off_y) end
 
 	for _,v in ipairs(platforms) do
 		v:draw(off_x, off_y)
@@ -146,14 +156,11 @@ function love.draw()
 		v:draw(off_x, off_y)
 	end
 
-	for _,layer in ipairs(map.fg_layers) do
-		layer:draw(map.tiles, off_x, off_y)
+	for _,layer in ipairs(world.fg_layers) do
+		layer:draw(off_x, off_y)
 	end
 
 	love.graphics.setColor(255, 0, 0)
-
-	map.level:drawCollisions(map.tiles, off_x, off_y)
-	drawCollisions(map.collision_objects, off_x, off_y)
 
 	love.graphics.lastColor()
 

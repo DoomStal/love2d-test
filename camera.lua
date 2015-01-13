@@ -8,4 +8,3 @@ function camera:setPosition(x, y)
   self.x = math.floor(self.x + 0.5)
   self.y = math.floor(self.y + 0.5)
 end
-

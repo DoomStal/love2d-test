@@ -1,7 +1,6 @@
 -- ***** ***** ***** ***** ***** xml parser
-
-
 -- LoadXML from http://lua-users.org/wiki/LuaXml
+
 function LoadXML(s)
   local function LoadXML_parseargs(s)
     local arg = {}
@@ -49,4 +48,3 @@ function LoadXML(s)
   end
   return stack[1]
 end
-

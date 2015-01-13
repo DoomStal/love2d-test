@@ -4,6 +4,7 @@ function inherits( baseClass )
 
 	local class_mt = { __index = new_class }
 
+	-- TODO: ball base class constructor if such exists
 	function new_class:new(...)
 		local newinst = {}
 		setmetatable( newinst, class_mt )
@@ -19,6 +20,8 @@ function inherits( baseClass )
 		return new_class
 	end
 
+	-- note: since class's method doesn't know class it belongs to and can be
+	-- called for any derived class object, don't rely heavily on super()
 	function new_class:super()
 		return baseClass
 	end

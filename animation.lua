@@ -1,23 +1,16 @@
-require("oop")
-require("image_man")
-
 Animation = inherits(nil)
 
-Animation.frames = {}
-Animation.rate = 0
-Animation.loop = false
+function Animation:init(frames, rate, loop)
+	self.frames = {} -- [n] => Frame
+	self.rate = 0 -- frames per tick
+	self.loop = false
+end
 
 Frame = inherits(nil)
 
 function Frame:init(image_name, ox, oy, x, y, w, h)
-	if nil == image_name then
-		image_name = "stub.png"
-		ox = 24
-		oy = 48
-	end
-
-	self.ox = ox or 0
-	self.oy = oy or 0
+	self.ox = ox or 0 -- origin x
+	self.oy = oy or 0 -- origin y
 
 	self.image = ImageManager:get(image_name)
 	self.x = x or 0
@@ -35,4 +28,3 @@ function Frame:draw(off_x, off_y, flip_x)
 		love.graphics.draw(self.image, self.quad, off_x - self.ox, off_y - self.oy, 0, 1, 1)
 	end
 end
-
