@@ -10,6 +10,8 @@ Entity.width = 0
 Entity.height = 0
 Entity.flip_x = false
 
+EntityMoving.collision_object = nil
+
 Entity.animations = {}
 Entity.animation = nil
 Entity.animation_frame = 1
@@ -18,6 +20,15 @@ Entity.animation_time = 0
 Entity.color_r = 255
 Entity.color_g = 255
 Entity.color_b = 255
+
+function Entity:makeCollisionBox()
+	self.collision_object = CollisionPolygon:new({
+		CollisionSegment:new(-self.width/2, -self.height, self.width/2, -self.height),
+		CollisionSegment:new(self.width/2, -self.height, self.width/2, 0),
+		CollisionSegment:new(self.width/2, 0, -self.width/2, 0),
+		CollisionSegment:new(-self.width/2, 0, -self.width/2, -self.height)
+	})
+end
 
 function Entity:update(dt)
 	if self.animation then
@@ -73,24 +84,21 @@ EntityMoving = inherits(Entity)
 EntityMoving.xv = 0
 EntityMoving.yv = 0
 
-EntityMoving.collision_object = nil
+EntityMoving.nx = 0
+EntityMoving.ny = 0
+
+EntityMoving.thrust_x = 0
+EntityMoving.thrust_y = 0
+EntityMoving.friction = 0
+
+EntityMoving.collidesWith = Set:new()
+EntityMoving.collidesWith:insert(world)
 
 EntityMoving.on_ground = false
 EntityMoving.ground_nx = 0
 EntityMoving.ground_ny = 0
 EntityMoving.riding_entity = nil
 EntityMoving.riding_moved = false
-
-EntityMoving.friction = 10
-
-function EntityMoving:makeCollisionBox()
-	self.collision_object = CollisionPolygon:new({
-		CollisionSegment:new(-self.width/2, -self.height, self.width/2, -self.height),
-		CollisionSegment:new(self.width/2, -self.height, self.width/2, 0),
-		CollisionSegment:new(self.width/2, 0, -self.width/2, 0),
-		CollisionSegment:new(-self.width/2, 0, -self.width/2, -self.height)
-	})
-end
 
 function EntityMoving:tryMove(dx, dy)
 	local toi, cnx, cny, cx, cy
@@ -206,6 +214,9 @@ end
 function EntityMoving:update(dt)
 	Entity.update(self, dt)
 
+	self.nx = self.x
+	self.ny = self.y
+
 	self.riding_moved = false
 
 	if self.riding_entity then
@@ -222,7 +233,7 @@ function EntityMoving:update(dt)
 	print()
 	print("xv,yv", self.xv, self.yv)
 
-	self:pushByPlatforms()
+--	self:pushByPlatforms()
 
 		local toi = self:tryMove(self.xv, self.yv)
 		if toi<1 then
@@ -250,6 +261,11 @@ function EntityMoving:update(dt)
 		if math.abs(self.xv) < 0.1 then self.xv = 0 end
 		self.yv = self.yv * 0.98
 	end
+end
+
+function EntityMoving:move()
+	self.x = self.nx
+	self.y = self.ny
 end
 
 function EntityMoving:draw(off_x, off_y)

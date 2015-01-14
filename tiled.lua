@@ -5,95 +5,12 @@ require("collision")
 require("platform")
 require("utils")
 
-function parseObject(nobj)
-	local nobjs = nobj[1]
-	if not nobjs then error("bad object") end
-
-	local vertices = nil
-
-	if nobjs.label == "polyline" or nobjs.label == "polygon" then
-		vertices = {}
-		local x = tonumber(nobj.xarg.x)
-		local y = tonumber(nobj.xarg.y)
-		local i = 1
-		while true do
-			local ni, j, vx, vy = string.find(nobjs.xarg.points, "%s*(-?%d+),(-?%d+)%s*", i)
-			if not ni then break end
-			vx = vx + x
-			vy = vy + y
-			table.insert(vertices, {x=vx, y=vy})
-			i = j + 1
-		end
-	end
-
-	return vertices
-end
-
-function loadCollisionObjects(sub, collision_objects, ox, oy)
-	ox = ox or 0
-	oy = oy or 0
-	for _, nobj in ipairs(sub) do
-		if nobj.label ~= "object" then error("bad object") end
-		if nobj.xarg.width and nobj.xarg.height then
-			local x = tonumber(nobj.xarg.x)
-			local y = tonumber(nobj.xarg.y)
-			local w = tonumber(nobj.xarg.width)
-			local h = tonumber(nobj.xarg.height)
-			table.insert(collision_objects, CollisionPolygon:new({
-				CollisionSegment:new(x, y, x+w, y),
-				CollisionSegment:new(x+w, y, x+w, y+h),
-				CollisionSegment:new(x+w, y+h, x, y+h),
-				CollisionSegment:new(x, y+h, x, y)
-			}))
-		else
-			local nobjs = nobj[1]
-			if not nobjs then error("bad object") end
-
-			local vertices = parseObject(nobj)
-			if nobjs.label == "polyline" or nobjs.label == "polygon" then
-				local seg_list = {}
-				for i = 1, #vertices do
-					if i>1 then
-						table.insert(seg_list, CollisionSegment:new(
-							vertices[i-1].x, vertices[i-1].y,
-							vertices[i].x, vertices[i].y
-						))
-					end
-				end
-				if nobjs.label == "polygon" then
-					table.insert(seg_list, CollisionSegment:new(
-						vertices[#vertices].x, vertices[#vertices].y,
-						vertices[1].x, vertices[1].y
-					))
-				end
-				table.insert(collision_objects, CollisionPolygon:new(seg_list))
-			end
-		end
-	end
-end
-
-function adjustWaypoints(vertices, pl)
---	local ox = vertices[1].x - pl.x
---	local oy = vertices[1].y - pl.y
-	local ox = pl.width / 2
-	local oy = pl.height / 2
-	for k2,v in ipairs(vertices) do
-		vertices[k2].x = v.x - ox
-		vertices[k2].y = v.y - oy
-	end
-end
-
 function Map.load(file)
 	local xml = LoadXML(love.filesystem.read(file))
 
 	local map = Map:new()
 
 	local nmap = xml[2]
-
-	map.tilewidth = tonumber(nmap.xarg.tilewidth)
-	map.tileheight = tonumber(nmap.xarg.tileheight)
-	map.width = tonumber(nmap.xarg.width)
-	map.height = tonumber(nmap.xarg.height)
 
 	-- load tilesets and layers
 	for _, sub in ipairs(nmap) do

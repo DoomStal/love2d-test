@@ -11,3 +11,19 @@ function Collection:remove(index)
 		self[#self] = nil
 	end
 end
+
+Set = inherits(nil)
+Set.elements = {}
+
+function Set:insert(value)
+	self.elements[value] = value
+	return value
+end
+
+function Set:contains(value)
+	return nil ~= self.elements[value]
+end
+
+function Set:remove(value)
+	self.elements[value] = nil
+end

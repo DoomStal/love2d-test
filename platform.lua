@@ -1,6 +1,3 @@
-require("oop")
-require("entity")
---require("tiled")
 
 Platform = inherits(Entity)
 
@@ -40,10 +37,12 @@ function Platform:draw(off_x, off_y)
 		self.cobj:draw(off_x + self.x, off_y + self.y)
 		love.graphics.lastColor()
 	elseif self.layer then
-		self.layer:draw(map.tiles, off_x + self.x, off_y + self.y)
+		self.layer:draw(off_x + self.x, off_y + self.y)
+--[[
 		love.graphics.setColor(255, 0, 255)
 			self.layer:drawCollisions(map.tiles, off_x+  self.x, off_y + self.y, true)
 		love.graphics.lastColor()
+]]
 	end
 	love.graphics.print(self.x, off_x + self.x, off_y + self.y - 20)
 	love.graphics.print(self.y, off_x + self.x, off_y + self.y)
@@ -145,7 +144,7 @@ function Platform:collide(entity, dx, dy)
 			dx, dy,
 			self.x + self.xv, self.y + self.yv)
 	elseif self.layer then
-		toi, cnx, cny, cx, cy = self.layer:collideEntity(map.tiles,
+		toi, cnx, cny, cx, cy = self.layer:collideEntity(
 			entity, 
 			dx, dy,
 			self.x + self.xv, self.y + self.yv)

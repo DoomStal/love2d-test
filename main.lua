@@ -7,14 +7,15 @@ require("image_man")
 require("animation")
 require("collision")
 require("entity")
-require("player")
 
 require("world")
 require("platform")
+
+require("player")
+
 require("camera")
 
 entities = Collection:new()
-platforms = Collection:new()
 
 function love.load()
 
@@ -47,7 +48,7 @@ function love.load()
 		print("warning: player spawn point not set!")
 	end
 
-	entities:insert(player)
+	world:insert(player)
 
 	love.audio.setVolume(0.3)
 
@@ -107,17 +108,11 @@ function love.update(dt)
 	player.key_left = love.keyboard.isDown("left")
 	player.key_right = love.keyboard.isDown("right")
 
---[[
 	if not frame_by_frame or frame_next then
 		frame_next = false
-		for _,v in ipairs(entities) do
-			v:update(dt)
-		end
-		for _,v in ipairs(platforms) do
-			v:update(dt)
-		end
+		world:update()
+		world:move()
 	end
-]]
 
 	camera:setPosition(player.x, player.y - player.height/2)
 
@@ -143,22 +138,7 @@ function love.draw()
 
 	love.graphics.rectangle("line", off_x, off_y, world:getWidth(), world:getHeight())
 
-	for _,layer in ipairs(world.bg_layers) do
-		layer:draw(off_x, off_y)
-	end
-	if world.level then world.level:draw(off_x, off_y) end
-
-	for _,v in ipairs(platforms) do
-		v:draw(off_x, off_y)
-	end
-
-	for _,v in ipairs(entities) do
-		v:draw(off_x, off_y)
-	end
-
-	for _,layer in ipairs(world.fg_layers) do
-		layer:draw(off_x, off_y)
-	end
+	world:draw(off_x, off_y)
 
 	love.graphics.setColor(255, 0, 0)
 
