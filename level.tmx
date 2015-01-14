@@ -361,9 +361,9 @@
    <tile gid="19"/>
    <tile gid="20"/>
    <tile gid="0"/>
-   <tile gid="0"/>
-   <tile gid="0"/>
-   <tile gid="0"/>
+   <tile gid="33"/>
+   <tile gid="33"/>
+   <tile gid="33"/>
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
@@ -1395,7 +1395,7 @@
  </layer>
  <objectgroup name="collision"/>
  <objectgroup name="entity">
-  <object name="start" type="spawn" x="112" y="672" width="32" height="32"/>
+  <object name="start" type="spawn" x="512" y="96" width="32" height="32"/>
  </objectgroup>
  <objectgroup name="platform">
   <object name="pl1" type="platform" x="32" y="512" width="64" height="64"/>
@@ -1406,5 +1406,13 @@
    <polyline points="0,0 0,-224"/>
   </object>
   <object name="pl2" type="platform" x="32" y="192" width="64" height="64"/>
+  <object name="pl3" type="platform" x="480" y="128" width="96" height="32">
+   <properties>
+    <property name="speed" value="13.5"/>
+   </properties>
+  </object>
+  <object name="pl3" x="528" y="144">
+   <polyline points="-32,0 1216,0"/>
+  </object>
  </objectgroup>
 </map>

@@ -4,12 +4,12 @@ require("oop")
 require("collection")
 require("image_man")
 
+require("world")
+require("platform")
+
 require("animation")
 require("collision")
 require("entity")
-
-require("world")
-require("platform")
 
 require("player")
 
@@ -72,8 +72,8 @@ function love.keypressed(key)
 		love.audio.setVolume(0)
 	end
 	if key == "r" then
-		player.x = map.spawn_points[1].x
-		player.y = map.spawn_points[1].y
+		player.x = world.spawn_points[1].x
+		player.y = world.spawn_points[1].y
 	end
 	if key == "f" then
 		frame_by_frame = not frame_by_frame
@@ -110,7 +110,7 @@ function love.update(dt)
 
 	if not frame_by_frame or frame_next then
 		frame_next = false
-		world:update()
+		world:update(dt)
 		world:move()
 	end
 

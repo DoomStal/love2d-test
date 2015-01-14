@@ -111,7 +111,7 @@ function Platform:nextWaypoint()
 end
 
 function Platform:update(dt)
-	if #self.waypoints < 1 then return end
+	if #self.waypoints < 2 then return end
 	if self.stop then return end
 
 	if not self.waypoint_next then self:nextWaypoint() end
@@ -144,7 +144,7 @@ function Platform:collide(entity, dx, dy)
 			dx, dy,
 			self.x + self.xv, self.y + self.yv)
 	elseif self.layer then
-		toi, cnx, cny, cx, cy = self.layer:collideEntity(
+		toi, cnx, cny, cx, cy = self.layer:collide(
 			entity, 
 			dx, dy,
 			self.x + self.xv, self.y + self.yv)
@@ -163,7 +163,7 @@ function Platform:push(entity)
 			-self.xv, -self.yv,
 			self.x, self.y)
 	elseif self.layer then
-		toi, cnx, cny, cx, cy = self.layer:collideEntity(map.tiles,
+		toi, cnx, cny, cx, cy = self.layer:collide(
 			entity,
 			-self.xv, -self.yv,
 			self.x, self.y)

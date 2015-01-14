@@ -10,7 +10,7 @@ Entity.width = 0
 Entity.height = 0
 Entity.flip_x = false
 
-EntityMoving.collision_object = nil
+Entity.collision_object = nil
 
 Entity.animations = {}
 Entity.animation = nil
@@ -92,7 +92,7 @@ EntityMoving.thrust_y = 0
 EntityMoving.friction = 0
 
 EntityMoving.collidesWith = Set:new()
-EntityMoving.collidesWith:insert(world)
+--EntityMoving.collidesWith:insert(world)
 
 EntityMoving.on_ground = false
 EntityMoving.ground_nx = 0
@@ -106,7 +106,7 @@ function EntityMoving:tryMove(dx, dy)
 
 	local cp
 
-	for _, platform in ipairs(platforms) do
+	for _, platform in ipairs(world.platforms) do
 		toi2, cnx2, cny2, cx2, cy2 = platform:collide(self, dx, dy)
 		if toi2 and (not toi or toi2 < toi) then
 			toi, cnx, cny, cx, cy = toi2, cnx2, cny2, cx2, cy2
@@ -114,14 +114,14 @@ function EntityMoving:tryMove(dx, dy)
 		end
 	end
 
-	toi2, cnx2, cny2, cx2, cy2 = map.level:collideEntity(map.tiles, self, dx, dy)
+	toi2, cnx2, cny2, cx2, cy2 = world.level:collide(self, dx, dy)
 	if not toi or (toi2 and toi2 < toi) then
 		toi, cnx, cny, cx, cy = toi2, cnx2, cny2, cx2, cy2
 		cp = nil
 	end
 
 	toi2, cnx2, cny2, cx2, cy2 = collideList(self.collision_object, self.x, self.y,
-	dx, dy, map.collision_objects, 0, 0)
+	dx, dy, world.collision_objects, 0, 0)
 	if not toi or (toi2 and toi2 < toi) then
 		toi, cnx, cny, cx, cy = toi2, cnx2, cny2, cx2, cy2
 		cp = nil
@@ -158,7 +158,7 @@ end
 function EntityMoving:pushByPlatforms()
 	local toi, cnx, cny, cx, cy, cp
 
-	for _, platform in ipairs(platforms) do
+	for _, platform in ipairs(world.platforms) do
 		local toi2, cnx2, cny2, cx2, cy2 = platform:push(self)
 		if not toi or (toi2 and toi2 < toi) then
 			toi, cnx, cny, cx, cy = toi2, cnx2, cny2, cx2, cy2
@@ -214,8 +214,8 @@ end
 function EntityMoving:update(dt)
 	Entity.update(self, dt)
 
-	self.nx = self.x
-	self.ny = self.y
+	self.xv = self.xv + self.thrust_x
+	self.yv = self.yv + self.thrust_y
 
 	self.riding_moved = false
 
@@ -233,11 +233,14 @@ function EntityMoving:update(dt)
 	print()
 	print("xv,yv", self.xv, self.yv)
 
---	self:pushByPlatforms()
+	self:pushByPlatforms()
+
+	self.nx = self.x
+	self.ny = self.y
 
 		local toi = self:tryMove(self.xv, self.yv)
 		if toi<1 then
---			self:tryMove((1-toi) * self.xv, (1-toi) * self.yv)
+			self:tryMove((1-toi) * self.xv, (1-toi) * self.yv)
 		end
 
 	if not self.on_ground then
@@ -245,13 +248,16 @@ function EntityMoving:update(dt)
 		self:tryMove(0, 0.1)
 	end
 
-	local ground_y = map:getHeight()
+	local ground_y = world:getHeight()
 	if self.y > ground_y then
 		self.y = ground_y
 		self.on_ground = true
 		self.ground_nx = 0
 		self.ground_ny = -1
 	end
+
+	self.x, self.nx = self.nx, self.x
+	self.y, self.ny = self.ny, self.y
 
 	if self.on_ground then
 		self.xv = 0
@@ -301,32 +307,41 @@ function EntityLiving:update(dt)
 		self.on_ground = false
 	end
 
+	self.thrust_x = 0
+	self.thrust_y = 0
+
 	if(self.key_left) then
 		self.flip_x = true
 		if self.on_ground then
-			self.xv = self.ground_ny * spd
-			self.yv = -self.ground_nx * spd
+			self.thrust_x = self.ground_ny * spd
+			self.thrust_y = -self.ground_nx * spd
 		else
-			self.xv = -spd
+			self.thrust_x = -spd
+			if self.xv + self.thrust_x < -spd then self.thrust_x = -spd - self.xv end
+			if self.thrust_x > spd then self.thrust_x = spd end
 		end
 	elseif(self.key_right) then
 		self.flip_x = false
 		if self.on_ground then
-			self.xv = -self.ground_ny * spd
-			self.yv = self.ground_nx * spd
+			self.thrust_x = -self.ground_ny * spd
+			self.thrust_y = self.ground_nx * spd
 		else
-			self.xv = spd
+			self.thrust_x = spd
+			if self.xv + self.thrust_x > spd then self.thrust_x = spd - self.xv end
+			if self.thrust_x < -spd then self.thrust_x = -spd end
 		end
 	else
 		if not self.on_ground then
-			self.xv = 0
+			self.thrust_x = -self.xv
+			if self.thrust_x < -spd then self.thrust_x = -spd end
+			if self.thrust_x > spd then self.thrust_x = spd end
 		end
 	end
 
 	if(self.on_ground) then
 		if(self.key_jump) then
 			love.audio.play(sound["jump"])
-			self.yv = self.jump_vel
+			self.thrust_y = self.jump_vel
 			self.on_ground = false
 		end
 	end

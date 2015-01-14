@@ -133,9 +133,9 @@ function world:load(file)
 						if ty + h > self.level.height then h = self.level.height - ty end
 
 						local til = {}
-						for j = 1, w do
+						for j = 1, h do
 							til[j] = {}
-							for i = 1, h do
+							for i = 1, w do
 								til[j][i] = self.level.tiles[ty + j][tx + i]
 								self.level.tiles[ty + j][tx + i] = 0
 							end
@@ -150,6 +150,13 @@ function world:load(file)
 						pl.x = x
 						pl.y = y
 						self.platforms:insert(pl)
+
+						if nobj[1] and nobj[1].label == "properties" then
+							for _,nprop in ipairs(nobj[1]) do
+								print_rek(nprop)
+								if nprop.xarg.name == "speed" then pl.speed = tonumber(nprop.xarg.value) end
+							end
+						end
 
 						pls[#self.platforms] = pl
 						if nobj.xarg.name then
@@ -233,7 +240,7 @@ function world:update(dt)
 	for v in pairs(self.updateSet.elements) do
 		v:update(dt)
 	end
-	for v in ipairs(self.platforms) do
+	for _,v in ipairs(self.platforms) do
 		v:update(dt)
 	end
 end

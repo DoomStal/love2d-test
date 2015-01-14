@@ -1,3 +1,6 @@
+function print_val(t)
+end
+
 function print_rek(t, max_depth, depth)
 	depth = depth or 0
 	if max_depth and depth > max_depth then return end
@@ -10,15 +13,9 @@ function print_rek(t, max_depth, depth)
 	local ident = string.rep(" ", depth)
 	for k,v in pairs(t) do
 		if type(v) ~= "table" then
-			if nil == v then
-				print(' '..ident..k.." = nil'")
-			elseif type(v) == "userdata" then
-				print(' '..ident..k.." = ("..type(v)..")")
-			else
-				print(' '..ident..k.." = ("..type(v)..") '"..v..'\'')
-			end
+			print(' '..ident..tostring(k).." = ("..type(v)..") '"..tostring(v)..'\'')
 		else
-			print(' '..ident..k.." = (table) {")
+			print(' '..ident..tostring(k).." = (table) {")
 			print_rek(v, max_depth, depth+1)
 			print(' '..ident..'}')
 		end
