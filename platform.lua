@@ -38,11 +38,10 @@ function Platform:draw(off_x, off_y)
 		love.graphics.lastColor()
 	elseif self.layer then
 		self.layer:draw(off_x + self.x, off_y + self.y)
---[[
+
 		love.graphics.setColor(255, 0, 255)
-			self.layer:drawCollisions(map.tiles, off_x+  self.x, off_y + self.y, true)
+		self.layer:drawCollisions(off_x+  self.x, off_y + self.y)
 		love.graphics.lastColor()
-]]
 	end
 	love.graphics.print(self.x, off_x + self.x, off_y + self.y - 20)
 	love.graphics.print(self.y, off_x + self.x, off_y + self.y)

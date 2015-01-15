@@ -101,31 +101,7 @@ EntityMoving.riding_entity = nil
 EntityMoving.riding_moved = false
 
 function EntityMoving:tryMove(dx, dy)
-	local toi, cnx, cny, cx, cy
-	local toi2, cnx2, cny2, cx2, cy2
-
-	local cp
-
-	for _, platform in ipairs(world.platforms) do
-		toi2, cnx2, cny2, cx2, cy2 = platform:collide(self, dx, dy)
-		if toi2 and (not toi or toi2 < toi) then
-			toi, cnx, cny, cx, cy = toi2, cnx2, cny2, cx2, cy2
-			cp = platform
-		end
-	end
-
-	toi2, cnx2, cny2, cx2, cy2 = world.level:collide(self, dx, dy)
-	if not toi or (toi2 and toi2 < toi) then
-		toi, cnx, cny, cx, cy = toi2, cnx2, cny2, cx2, cy2
-		cp = nil
-	end
-
-	toi2, cnx2, cny2, cx2, cy2 = collideList(self.collision_object, self.x, self.y,
-	dx, dy, world.collision_objects, 0, 0)
-	if not toi or (toi2 and toi2 < toi) then
-		toi, cnx, cny, cx, cy = toi2, cnx2, cny2, cx2, cy2
-		cp = nil
-	end
+	local toi, cnx, cny, cx, cy, cp = world:collide(self, dx, dy)
 
 	if toi then
 		if toi < 0 then toi = 0 end
@@ -246,14 +222,6 @@ function EntityMoving:update(dt)
 	if not self.on_ground then
 		self.yv = self.yv + 0.3
 		self:tryMove(0, 0.1)
-	end
-
-	local ground_y = world:getHeight()
-	if self.y > ground_y then
-		self.y = ground_y
-		self.on_ground = true
-		self.ground_nx = 0
-		self.ground_ny = -1
 	end
 
 	self.x, self.nx = self.nx, self.x

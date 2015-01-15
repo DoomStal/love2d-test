@@ -221,7 +221,13 @@ function world:draw(off_x, off_y)
 	for _,layer in ipairs(self.bg_layers) do
 		layer:draw(off_x, off_y)
 	end
-	if self.level then self.level:draw(off_x, off_y) end
+	if self.level then
+		self.level:draw(off_x, off_y)
+
+		love.graphics.setColor(255, 0, 0)
+		self.level:drawCollisions(off_x, off_y)
+		love.graphics.lastColor()
+	end
 
 	for _,v in ipairs(self.platforms) do
 		v:draw(off_x, off_y)
@@ -252,6 +258,38 @@ function world:move()
 end
 
 function world:collide(entity, dx, dy)
+	local toi, cnx, cny, cx, cy
+
+	local cp = nil
+
+	for _, platform in ipairs(self.platforms) do
+		toi2, cnx2, cny2, cx2, cy2 = platform:collide(entity, dx, dy)
+		if toi2 and (not toi or toi2 < toi) then
+			toi, cnx, cny, cx, cy = toi2, cnx2, cny2, cx2, cy2
+			cp = platform
+		end
+	end
+
+	toi2, cnx2, cny2, cx2, cy2 = self.level:collide(entity, dx, dy)
+	if not toi or (toi2 and toi2 < toi) then
+		toi, cnx, cny, cx, cy = toi2, cnx2, cny2, cx2, cy2
+		cp = nil
+	end
+
+	toi2, cnx2, cny2, cx2, cy2 = collideList(entity.collision_object, entity.x, entity.y,
+	dx, dy, self.collision_objects, 0, 0)
+	if not toi or (toi2 and toi2 < toi) then
+		toi, cnx, cny, cx, cy = toi2, cnx2, cny2, cx2, cy2
+		cp = nil
+	end
+
+	-- TODO: return toi
+	local ground_y = self:getHeight()
+	if entity.y > ground_y then
+		entity.y = ground_y
+	end
+
+	return toi, cnx, cny, cx, cy, cp
 end
 
 -- classes
@@ -311,6 +349,30 @@ function Layer:draw(off_x, off_y)
 	end
 end
 
+function Layer:drawCollisions(off_x, off_y, draw_all)
+	if not self.col_minx then return end
+
+	local sw = love.graphics.getWidth()
+	local sh = love.graphics.getHeight()
+
+	local minx = math.max(self.col_minx, math.floor(-off_x/self.tilewidth))
+	local maxx = math.min(self.col_maxx, math.ceil( (sw-off_x)/self.tilewidth ))
+	local miny = math.max(self.col_miny, math.floor(-off_y/self.tileheight))
+	local maxy = math.min(self.col_maxy, math.ceil( (sh-off_y)/self.tileheight ))
+
+	for y = miny, maxy do
+		for x = minx, maxx do
+			local t = world.tileset[self.tiles[y][x]]
+			if t then
+				drawCollisions(t.collision_objects,
+					(x-1)*self.tilewidth + off_x,
+					(y-1)*self.tileheight + off_y
+				)
+			end
+		end
+	end
+end
+
 function Layer:collide(entity, dx, dy, sox, soy)
 	sox = sox or 0
 	soy = soy or 0
@@ -319,6 +381,13 @@ function Layer:collide(entity, dx, dy, sox, soy)
 	local maxx = math.min(self.width, math.ceil( (entity.x+entity.width/2-sox)/self.tilewidth ) + 1)
 	local miny = math.max(1, math.floor( (entity.y-entity.height-soy)/self.tileheight ))
 	local maxy = math.min(self.height, math.ceil( (entity.y-soy) / self.tileheight ) + 1)
+
+	if entity == player then
+		self.col_minx = minx
+		self.col_maxx = maxx
+		self.col_miny = miny
+		self.col_maxy = maxy
+	end
 
 	local toi, cnx, cny, cx, cy
 
